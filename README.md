@@ -48,17 +48,15 @@ Grammar(
   'Import saarland.cispa.se.tribblel._\n",
   'Production := 'Reference ~ ":=" ~ 'Alternation,
   'Alternation := 'Concatenation ~ ("|" ~ 'Concatenation).rep,
-  'Concatenation := 'Atom.rep(1) ~ ("@@" ~ 'prob).?,
+  'Concatenation := 'Atom.rep(1),
   'Atom := ( "(" ~ 'Alternation ~ ")" | 'Regex | 'Literal | 'Reference ) ~ 'Quant.?,
   'Quant := ".?" | ".rep" | ".rep(" ~ 'num ~ ")" | ".rep(" ~ 'num ~ "," ~ 'num ~ ")",
   'num := "0|([1-9][0-9]*)".regex,
-  'prob := "[0-9.xXa-fA-FpP-]+".regex,
   'Reference := "'[A-Za-z][A-Za-z0-9]*".regex,
   'Literal := "\"" ~ ("[^\"\\\\]".regex | "\\" ~ "[nrt\"\\\\]".regex).rep ~ "\"",
   'Regex := "\"" ~ 'regexp ~ "\".regex"
   // NOTE: 'regexp is defined as below
 )
-
 ```
 
 Here is an example grammar for JSON written using the Scala DSL:
@@ -107,7 +105,7 @@ The grammars can also be provided in the format described by the following PEG-l
 Grammar ::= Production+
 Production ::= NonTerminal '=' Alternation ';'
 Alternation ::= Concatenation ( '|' Concatenation )*
-Concatenation ::= Atom+ ('@@' Probability)?
+Concatenation ::= Atom+
 Atom ::= ( '(' Alternation ')' | Regex | Literal | NonTerminal ) Quant?
 
 Quant ::= [?+*] 
@@ -116,7 +114,6 @@ Quant ::= [?+*]
         | '{' num ',' num '}'
         
 num ::= [0-9]+
-Probability ::= [0-9A-Fa-fxXpP.-]+
 NonTerminal ::= '?[A-Za-z0-9_$]+
 Literal ::= '"' ( [^"\] | '\' [nrt"\] )* '"'
 Regex ::= '/' regexp '/'
