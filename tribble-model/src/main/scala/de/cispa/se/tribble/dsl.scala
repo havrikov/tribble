@@ -28,24 +28,24 @@ object dsl {
   /** Automatically translates a [[Symbol]] into a [[Reference]] grammar object.  */
   implicit def nonTerminal(nonTerminal: Symbol): Reference = Reference(nonTerminal.name)
 
-  implicit class RichChar(val start: Char) extends AnyVal {
+  implicit final class RichChar(private val start: Char) extends AnyVal {
     /** Create a [[Regex]] range from [[start]] to `stop` (inclusive). */
     def ->(stop: Char): Regex = new Regex(start, stop, 0)
   }
 
-  implicit class RegexString(val value: String) extends AnyVal {
+  implicit final class RegexString(private val value: String) extends AnyVal {
     /** Create a [[Regex]] grammar object from a literal string as defined by
       * https://www.brics.dk/automaton/doc/index.html?dk/brics/automaton/RegExp.html
       */
     def regex: Regex = Regex(value)
   }
 
-  implicit class RichNonTerminal[R](val ref: R)(implicit converter: R => Reference) {
+  implicit final class RichNonTerminal[R](private val ref: R)(implicit converter: R => Reference) {
     /** Create a production rule mapping the `NonTerminal` on the left side to the [[DerivationRule]] on the right. */
     def :=[T](rhs: T)(implicit conv: T => DerivationRule): Production = ref.name -> rhs
   }
 
-  implicit class RichDerivationRule[E](val rule: E)(implicit converter: E => DerivationRule) {
+  implicit final class RichDerivationRule[E](private val rule: E)(implicit converter: E => DerivationRule) {
     /** Mark this rule as optional. */
     def ? : Quantification = Quantification(rule, 0, 1)
 
