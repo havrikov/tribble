@@ -166,11 +166,12 @@ class TextDSLParserSpec extends TestSpecification {
   }
 
   it should "parse derivation rules annotated with probabilities" in {
+    val id = DerivationRule.DEFAULT_ID
     val grammars = Table("grammar" -> "expected",
-      """S = "a" @@ 0.5 | "b" @@ 0.5;""" -> """("a"0@@0.5 | "b"0@@0.5)""",
-      """S = "a" @@ 0.04 | "b";""" -> """("a"0@@0.04 | "b"0)""",
-      """S = "a" @@ 0.6 | "b" "c" @@ 0.4;""" -> """("a"0@@0.6 | ("b"0 ~ "c"0)@@0.4)""",
-      """S = "a" @@ 0x1.0p0 | "b";""" -> """("a"0@@1.0 | "b"0)"""
+      """S = "a" @@ 0.5 | "b" @@ 0.5;""" -> s"""("a"$id@@0.5 | "b"$id@@0.5)a$id""",
+      """S = "a" @@ 0.04 | "b";""" -> s"""("a"$id@@0.04 | "b"$id)a$id""",
+      """S = "a" @@ 0.6 | "b" "c" @@ 0.4;""" -> s"""("a"$id@@0.6 | ("b"$id ~ "c"$id)c$id@@0.4)a$id""",
+      """S = "a" @@ 0x1.0p0 | "b";""" -> s"""("a"$id@@1.0 | "b"$id)a$id"""
     )
 
     forAll(grammars) { (grammar, exp) =>

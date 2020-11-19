@@ -5,7 +5,6 @@ import de.cispa.se.tribble.dsl._
 import de.cispa.se.tribble.input.LiteralMerge
 
 class LiteralMergeSpec extends TestSpecification {
-  private val literalMerge = new LiteralMerge
 
   "The LiteralMerge" should "merge concatenations correctly" in {
     val grammars = Table(("input grammar", "merged grammar"),
@@ -20,7 +19,7 @@ class LiteralMergeSpec extends TestSpecification {
     )
 
     forAll(grammars) { (prods, expected) =>
-      literalMerge.process(GrammarRepr(prods._1, prods._2)) shouldEqual GrammarRepr(expected._1, expected._2)
+      LiteralMerge.process(GrammarRepr(prods._1, prods._2)) shouldEqual GrammarRepr(expected._1, expected._2)
     }
   }
 
@@ -35,7 +34,7 @@ class LiteralMergeSpec extends TestSpecification {
     )
 
     forAll(grammars) { (prods, expected) =>
-      literalMerge.process(GrammarRepr(prods._1, prods._2)) shouldEqual GrammarRepr(expected._1, expected._2)
+      LiteralMerge.process(GrammarRepr(prods._1, prods._2)) shouldEqual GrammarRepr(expected._1, expected._2)
     }
   }
 
@@ -51,7 +50,7 @@ class LiteralMergeSpec extends TestSpecification {
     )
 
     forAll(grammars) { (prods, expected) =>
-      literalMerge.process(GrammarRepr(prods._1, prods._2)) shouldEqual GrammarRepr(expected._1, expected._2)
+      LiteralMerge.process(GrammarRepr(prods._1, prods._2)) shouldEqual GrammarRepr(expected._1, expected._2)
     }
   }
 
@@ -69,7 +68,7 @@ class LiteralMergeSpec extends TestSpecification {
     )
 
     forAll(grammars) { (prods, expected) =>
-      literalMerge.process(GrammarRepr(prods._1, prods._2)) shouldEqual GrammarRepr(expected._1, expected._2)
+      LiteralMerge.process(GrammarRepr(prods._1, prods._2)) shouldEqual GrammarRepr(expected._1, expected._2)
     }
   }
 }

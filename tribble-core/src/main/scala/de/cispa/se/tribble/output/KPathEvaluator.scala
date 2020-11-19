@@ -29,13 +29,13 @@ class KPathEvaluator(private val parentTracker: ParentTracker) {
       case Some(p) => p match {
         case _: Alternation =>
           decl
-        case Concatenation(elements) =>
+        case Concatenation(elements, id) =>
           // strip out nullable quantifications
           val rules = elements.filterNot(rule => rule != decl && rule.isInstanceOf[Quantification] && rule.asInstanceOf[Quantification].min == 0)
           if (rules.size == 1) {
             rules.head
           } else {
-            Concatenation(rules)
+            Concatenation(rules, id)
           }
         case _ =>
           focusedParent(p)
@@ -52,15 +52,15 @@ class KPathEvaluator(private val parentTracker: ParentTracker) {
     } else {
       where match {
         // the .flatMap(unwrapConcat) resolves things like a ~ (b ~ c) into a ~ b ~ c
-        case Concatenation(elements) => Concatenation(elements.map(substituteRule(_, target, replacement)).flatMap(unwrapConcat))
-        case Quantification(subject, min, max) => Quantification(substituteRule(subject, target, replacement), min, max)
+        case Concatenation(elements, id) => Concatenation(elements.map(substituteRule(_, target, replacement)).flatMap(unwrapConcat), id)
+        case Quantification(subject, min, max, id) => Quantification(substituteRule(subject, target, replacement), min, max, id)
         case _ => where
       }
     }
   }
 
   private def unwrapConcat(rule: DerivationRule): Seq[DerivationRule] = rule match {
-    case Concatenation(elements) => elements
+    case Concatenation(elements, _) => elements
     case _ => rule :: Nil
   }
 

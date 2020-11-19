@@ -5,7 +5,7 @@ import scala.collection.mutable
 
 /**
   * Extracts all internal alternatives into top level. <br>
-  * <b>Run NodeDisambiguation afterwards to give newly created references unique ids!</b>
+  * <b>Run [[AssignIds]] afterwards to give newly created rules unique ids!</b>
   *
   * <p>
   * An example grammar
@@ -55,16 +55,16 @@ object AlternativeExtraction extends AssemblyPhase {
     * @return the possibly rewritten derivation rule for the given nonTerminal.
     */
   private def outerExtract(nonTerminal: NonTerminal, rule: DerivationRule)(implicit grammar: Grammar, ids: mutable.Map[NonTerminal, Int]): DerivationRule = rule match {
-    case Concatenation(elements) =>
-      val c = Concatenation(elements.map(innerExtract(nonTerminal, _)))
+    case Concatenation(elements, id) =>
+      val c = Concatenation(elements.map(innerExtract(nonTerminal, _)), id)
       grammar(nonTerminal) = c
       c
     case a: Alternation =>
-      val newA = Alternation(a.alternatives.map(innerExtract(nonTerminal, _)))
+      val newA = Alternation(a.alternatives.map(innerExtract(nonTerminal, _)), a.id)
       grammar(nonTerminal) = newA
       newA
-    case Quantification(subject, min, max) =>
-      val q = Quantification(innerExtract(nonTerminal, subject), min, max)
+    case Quantification(subject, min, max, id) =>
+      val q = Quantification(innerExtract(nonTerminal, subject), min, max, id)
       grammar(nonTerminal) = q
       q
     case _ =>
@@ -80,8 +80,8 @@ object AlternativeExtraction extends AssemblyPhase {
     * @return the possibly rewritten derivation rule for the given nonTerminal.
     */
   private def innerExtract(nonTerminal: NonTerminal, rule: DerivationRule)(implicit grammar: Grammar, ids: mutable.Map[NonTerminal, Int]): DerivationRule = rule match {
-    case Concatenation(elements) =>
-      val c = Concatenation(elements.map(innerExtract(nonTerminal, _)))
+    case Concatenation(elements, id) =>
+      val c = Concatenation(elements.map(innerExtract(nonTerminal, _)), id)
       grammar(nonTerminal) = c
       c
     case a: Alternation =>
@@ -93,8 +93,8 @@ object AlternativeExtraction extends AssemblyPhase {
       val newA = Alternation(a.alternatives.map(outerExtract(name, _)))
       grammar(name) = newA
       r
-    case Quantification(subject, min, max) =>
-      val q = Quantification(innerExtract(nonTerminal, subject), min, max)
+    case Quantification(subject, min, max, id) =>
+      val q = Quantification(innerExtract(nonTerminal, subject), min, max, id)
       grammar(nonTerminal) = q
       q
     case _ =>

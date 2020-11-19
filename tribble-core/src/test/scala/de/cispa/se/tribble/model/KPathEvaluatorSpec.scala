@@ -4,11 +4,12 @@ package model
 import java.io.File
 
 import de.cispa.se.tribble.dsl._
+import de.cispa.se.tribble.TestDSL._
 import de.cispa.se.tribble.input.{EmptyGrammarCache, GrammarLoader, SharedModelAssembler}
 import de.cispa.se.tribble.output.KPathEvaluator
-import org.scalatest.prop.TableFor1
+import org.scalatest.prop.{TableFor1, TableFor2}
 
-class KPathEvaluatorSpec extends TestSpecification with SharedModelAssembler {
+class KPathEvaluatorSpec extends TestSpecification with SharedModelAssembler with StructuralDerivationRuleEquality {
 
   private val loader = new GrammarLoader(modelAssembler, EmptyGrammarCache)
   private val grammar: GrammarRepr = loader.loadGrammar(new File("src/test/resources/typesafe/Expr.scala"))
@@ -17,15 +18,15 @@ class KPathEvaluatorSpec extends TestSpecification with SharedModelAssembler {
   private val evaluator = new KPathEvaluator(tracker)
 
   "The KPathEvaluator" should "correctly handle 1-paths" in {
-    val table = Table(("kPath", "context"),
-      Literal("-") -> Reference("term", 4) ~ "-" ~ Reference("expr", 1),
-      Literal("+") -> Reference("term", 3) ~ "+" ~ Reference("expr"),
-      Literal("-", 1) -> Literal("-", 1) ~ Reference("factor", 4),
-      Literal("+", 1) -> Literal("+", 1) ~ Reference("factor", 3),
-      Reference("number") -> Reference("number"),
-      "[a-z]".regex -> "[a-z]".regex,
-      Reference("expr", 3) -> Reference("expr", 3), // here the optional "\n".? is irrelevant
-      Literal("\n") -> Reference("expr", 3) ~ "\n".? // here it is not
+    val table: TableFor2[DerivationRule, DerivationRule] = Table(("kPath", "context"),
+      "-"/19 ==>'term/18 -- "-"/19 -- 'expr/20,
+      "+"/15 ==> 'term/14 -- "+"/15 -- 'expr/16,
+      "-"/31 ==> "-"/31 -- 'factor/32,
+      "+"/28 ==> "+"/28 -- 'factor/29,
+      'number/35 ==> 'number/35,
+      "[a-z]".regex/33 ==> "[a-z]".regex/33,
+      'expr/38 ==> 'expr/38, // here the optional "\n".? is irrelevant
+      "\n"/40 ==> 'expr/38 -- ("\n"/40).? // here it is not
     )
 
     forAll(table) { (kPath, context) =>
@@ -35,12 +36,9 @@ class KPathEvaluatorSpec extends TestSpecification with SharedModelAssembler {
 
   it should "correctly handle k-paths" in {
     val table = Table(("kPath", "context"),
-      // [expr@3->"-"
-      List(Reference("expr", 3), Literal("-")) -> Reference("term", 4) ~ "-" ~ Reference("expr", 1),
-      // [expr@3->term@2->factor
-      List(Reference("expr", 3), Reference("term", 2), Reference("factor")) -> Reference("factor"),
-      // [factor@2->expr@2->"-"
-      List(Reference("factor", 2), Reference("expr", 2), Literal("-")) -> Reference("term", 1) ~ "/" ~ "(" ~ Reference("term", 4) ~ "-" ~ Reference("expr", 1) ~ ")"
+      List('expr/38, "-"/19) ==> 'term/18 -- "-"/19 -- 'expr/20,
+      List('expr/38, 'term/12, 'factor/2) ==> 'factor/2,
+      List('factor/10, 'expr/25, "-"/19) ==> 'term/8 -- "/"/9 -- "("/24 -- 'term/18 -- "-"/19 -- 'expr/20 -- ")"/26
     )
     forAll(table) { (kPath, context) =>
       evaluator.evaluateKPath(kPath) shouldEqual context
@@ -50,10 +48,8 @@ class KPathEvaluatorSpec extends TestSpecification with SharedModelAssembler {
 
   it should "handle impossible k-paths appropriately" ignore {
     val table: TableFor1[List[DerivationRule]] = Table("kPath",
-      // ["-"->expr@3
-      List(Literal("-"), Reference("expr", 3)),
-      // [number->variable
-      List(Reference("number"), Reference("variable")),
+      List("-"/19, 'expr/20),
+      List('number/35, 'variable/36),
     )
 
     forAll(table) { kPath =>
@@ -64,7 +60,7 @@ class KPathEvaluatorSpec extends TestSpecification with SharedModelAssembler {
   }
 
   it should "throw for nonexistent elements" in {
-    val table: TableFor1[List[DerivationRule]] = Table("kPath", List("1"), List(Literal("-", 3)), List('literal, 'something), List(Regex("[a-f]")))
+    val table: TableFor1[List[DerivationRule]] = Table("kPath", List("1"/42), List("-"/3), List('literal/22, 'something/0), List("[a-f]".regex))
 
     forAll(table) { kPath =>
       assertThrows[NoSuchElementException] {

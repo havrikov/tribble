@@ -8,13 +8,13 @@ private[tribble] class SizedTreeGenerator(maxRepetitions: Int, random: Random, s
 
   private def childSlots(node: DNode)(implicit grammar: GrammarRepr): Seq[Slot] = node.decl match {
       case r: Reference => Slot(grammar.get(r), 0, node) :: Nil
-      case Concatenation(elements) => elements.zipWithIndex.map { case (e, i) => Slot(e, i, node) }
-      case Alternation(alternatives) =>
+      case Concatenation(elements, _) => elements.zipWithIndex.map { case (e, i) => Slot(e, i, node) }
+      case Alternation(alternatives, _) =>
         // try to choose the most slot-rich alternative
         val maxSlots = alternatives.maxBy(_.shortestDerivation).shortestDerivation
         val longest = alternatives.filter(_.shortestDerivation == maxSlots).toList
         Slot(longest(random.nextInt(longest.size)), 0, node) :: Nil
-      case Quantification(subject, min, max) =>
+      case Quantification(subject, min, max, _) =>
         val lower = Math.max(1, min)
         val constrainedMax = Math.max(lower, Math.min(max, maxRepetitions))
         Stream.fill(lower + random.nextInt(1 + constrainedMax - lower))(subject).zipWithIndex.map { case (e, i) => Slot(e, i, node) }

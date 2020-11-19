@@ -12,7 +12,7 @@ private[tribble] class GoalBasedTreeGenerator(closeOffGenerator: TreeGenerator, 
         val node = DNode(ref, parent)
         node.children(0) = gen(grammar.get(name), Some(node), currentDepth + 1)
         node
-      case a@Alternation(alternatives) =>
+      case a@Alternation(alternatives, _) =>
         // if the current target is not yet reached, take an alternative leading there fastest
         if (!goal.targetReached) {
           val shortest_alts = minimalElementsBy(alternatives, goal.cost)
@@ -31,7 +31,7 @@ private[tribble] class GoalBasedTreeGenerator(closeOffGenerator: TreeGenerator, 
           }
           node
         }
-      case c@Concatenation(elements) =>
+      case c@Concatenation(elements, _) =>
         // problem with left recursion
         // we have to expand the closest-to-target element first!
         val node = DNode(c, parent)
@@ -39,7 +39,7 @@ private[tribble] class GoalBasedTreeGenerator(closeOffGenerator: TreeGenerator, 
         val generated_children = sorted_by_closeness.map { case (e, i) => i -> gen(e, Some(node), currentDepth + 1) }
         node.children ++= generated_children
         node
-      case q@Quantification(subj, min, _) =>
+      case q@Quantification(subj, min, _, _) =>
         val node = DNode(q, parent)
         if (goal.targetReached) {
           val newChildren = Stream.fill(min)(subj).map(closeOffGenerator.gen(_, Some(node), currentDepth + 1)).toList

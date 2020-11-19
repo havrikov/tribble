@@ -20,19 +20,19 @@ private[tribble] class NaiveTreeGenerator(maxRepetitions: Int, regexGenerator: R
         DLeaf(r, parent, regexGenerator.generateIntoBuilder(r.automaton, new mutable.StringBuilder()).mkString)
       case l@Literal(value, _) =>
         DLeaf(l, parent, value)
-      case a@Alternation(alternatives) =>
+      case a@Alternation(alternatives, _) =>
         // uniform selection across alternation
         val n = random.nextInt(alternatives.size)
         val alternative = alternatives.iterator.drop(n).next
         val node = DNode(a, parent)
         node.children(0) = gen(alternative, Some(node), depth + 1)
         node
-      case c@Concatenation(elements) =>
+      case c@Concatenation(elements, _) =>
         val node = DNode(c, parent)
         val trees = elements.map(gen(_, Some(node), depth + 1))
         node.children ++= trees.indices zip trees
         node
-      case q@Quantification(subj, min, max) =>
+      case q@Quantification(subj, min, max, _) =>
         val constrainedMax = Math.max(min, Math.min(max, maxRepetitions))
         val node = DNode(q, parent)
         if (min > 0 || depth < maxDepth) {

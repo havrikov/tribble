@@ -2,14 +2,15 @@ package de.cispa.se.tribble
 package input
 
 import de.cispa.se.tribble.dsl._
+import de.cispa.se.tribble.TestDSL._
 
 class ModelAssemblerSpec extends TestSpecification with SharedModelAssembler {
 
   "The ModelAssembler" should "assemble simple grammars correctly" in {
     val grammars = Table(("productions", "grammar"),
-      Seq('S := "a") -> ("S", Map('S := "a")),
-      Seq('A := 'B, 'B := "b") -> ("A", Map('A := 'B, 'B := "b")),
-      Seq('A := "a" ~ 'B, 'B := "b") -> ("A", Map('A := "a" ~ 'B, 'B := "b"))
+      Seq('S := "a") -> ("S", Map('S := "a"/0)),
+      Seq('A := 'B, 'B := "b") -> ("A", Map('A := 'B/0, 'B := "b"/1)),
+      Seq('A := "a" ~ 'B, 'B := "b") -> ("A", Map('A := ("a"/ 1 -- 'B/2)/0, 'B := "b"/3))
     )
 
     forAll(grammars) { (prods, expected) =>
@@ -65,7 +66,7 @@ class ModelAssemblerSpec extends TestSpecification with SharedModelAssembler {
     )
 
     forAll (grammars) {grammar =>
-      inside (modelAssembler.assemble(grammar).get("A")) { case Alternation(alts) =>
+      inside (modelAssembler.assemble(grammar).get("A")) { case Alternation(alts, _) =>
         alts.map(_.probability).sum === 1.0 +- 1E-9
       }
     }

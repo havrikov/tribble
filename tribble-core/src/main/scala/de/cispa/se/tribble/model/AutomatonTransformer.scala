@@ -76,7 +76,7 @@ private[tribble] object AutomatonTransformer {
     if (result.contains(name)) {
       val oldRule = result(name)
       val newAlts = oldRule match {
-        case Alternation(alternatives) => alternatives ++ alts
+        case Alternation(alternatives, _) => alternatives ++ alts
         case _ => Seq(oldRule) ++ alts
       }
       result(name) = if (newAlts.size > 1) Alternation(newAlts) else newAlts.head

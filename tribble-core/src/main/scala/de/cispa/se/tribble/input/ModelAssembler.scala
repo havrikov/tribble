@@ -2,6 +2,7 @@ package de.cispa.se.tribble
 package input
 
 import java.util.StringJoiner
+
 import de.cispa.se.tribble.model.AutomatonTransformer
 import org.log4s.getLogger
 
@@ -14,34 +15,32 @@ private[tribble] class ModelAssembler(
                                        transformRegexes: Boolean = false,
                                        mergeLiterals: Boolean = false,
                                        checkDuplicateAlternatives: Boolean = true,
+                                       checkIds: Boolean = true,
                                      ) {
 
+  private val phases = mutable.ListBuffer[AssemblyPhase]()
+  private[tribble] def appendPhase(phase: AssemblyPhase): Unit = phases.append(phase)
+
+  appendPhase(new AutomatonAssembly(automatonCache))
+  if (transformRegexes) appendPhase(RegexTransformation)
+  if (mergeLiterals) appendPhase(LiteralMerge)
+  if (checkDuplicateAlternatives) appendPhase(CheckDuplicateAlternatives)
+  appendPhase(AssignIds)
+  if (checkIds) appendPhase(CheckIds)
+  appendPhase(ShortestDerivationComputation)
+  appendPhase(ProbabilityAssignment)
+  appendPhase(new ProbabilityRemapping(damping, similarity))
+  appendPhase(GrammarStatistics)
+
   def assemble(productions: Seq[Production]): GrammarRepr = {
-    val phases = List(
-      new BaseAssembly(productions),
-      new AutomatonAssembly(automatonCache)) ++
-      (if (transformRegexes) List(new RegexTransformation) else Nil) ++
-      (if (mergeLiterals) List(new LiteralMerge) else Nil) ++
-      (if (checkDuplicateAlternatives) List(CheckDuplicateAlternatives) else Nil) ++
-      List(
-        new NodeDisambiguation,
-        new ShortestDerivationComputation,
-        new ProbabilityAssignment,
-        new ProbabilityRemapping(damping, similarity),
-        GrammarStatistics
-      )
+    val allPhases = new BaseAssembly(productions) :: phases.toList
 
     var grammar: GrammarRepr = GrammarRepr("No start symbol set!", Map.empty)
-    for (phase <- phases) {
+    for (phase <- allPhases) {
       grammar = phase.process(grammar)
     }
     grammar
   }
-
-  // Possible optimizations:
-  // - associativity merge
-  // - recursion elimination
-
 }
 
 trait AssemblyPhase {
@@ -72,8 +71,8 @@ class BaseAssembly(productions: Seq[Production]) extends AssemblyPhase {
   }
 }
 
-class ShortestDerivationComputation extends AssemblyPhase {
-  private[this] val logger = getLogger
+object ShortestDerivationComputation extends AssemblyPhase {
+  private val logger = getLogger
 
   private def incNoOverflow(value: Int): Int = if (value >= Int.MaxValue - 1) Int.MaxValue else value + 1
 
@@ -81,11 +80,11 @@ class ShortestDerivationComputation extends AssemblyPhase {
     rule match {
       case r@Reference(name, _) =>
         r.shortestDerivation = incNoOverflow(resolved.getOrElse(name, Int.MaxValue))
-      case c@Concatenation(elements) =>
+      case c@Concatenation(elements, _) =>
         c.shortestDerivation = incNoOverflow(elements.map(resolve).max)
-      case a@Alternation(alternatives) =>
+      case a@Alternation(alternatives, _) =>
         a.shortestDerivation = incNoOverflow(alternatives.map(resolve).min)
-      case q@Quantification(subject, min, _) =>
+      case q@Quantification(subject, min, _, _) =>
         q.shortestDerivation = if (min == 0) 0 else incNoOverflow(resolve(subject))
       case _ =>
     }
@@ -113,7 +112,7 @@ class ShortestDerivationComputation extends AssemblyPhase {
 }
 
 class AutomatonAssembly(automatonCache: AutomatonCache) extends AssemblyPhase {
-  private[this] val logger = getLogger
+  private val logger = getLogger
 
   override def process(grammar: GrammarRepr): GrammarRepr = {
     logger.info("Constructing regex automata...")
@@ -129,24 +128,24 @@ class AutomatonAssembly(automatonCache: AutomatonCache) extends AssemblyPhase {
   }
 }
 
-class RegexTransformation extends AssemblyPhase {
-  private[this] val logger = getLogger
+object RegexTransformation extends AssemblyPhase {
+  private val logger = getLogger
 
   private def expandedRule(rule: DerivationRule)(implicit transformedAutomata: Box[Int]): (DerivationRule, Map[NonTerminal, DerivationRule]) = {
     val expanded: (DerivationRule, Map[NonTerminal, DerivationRule]) = rule match {
-      case q@Quantification(subject, min, max) =>
+      case q@Quantification(subject, min, max, _) =>
         val (s, additions) = expandedRule(subject)
         val newQ = Quantification(s, min, max)
         newQ.probability = q.probability
         newQ -> additions
-      case alt@Alternation(alternatives) =>
+      case alt@Alternation(alternatives, _) =>
         val set = alternatives.map(expandedRule)
         val a = set.map(_._1)
         val additions = set.flatMap(_._2)
         val newAlt = Alternation(a)
         newAlt.probability = alt.probability
         newAlt -> additions.toMap
-      case conc@Concatenation(elements) =>
+      case conc@Concatenation(elements, _) =>
         val list = elements.map(expandedRule)
         val e = list.map(_._1)
         val additions = list.flatMap(_._2)
@@ -185,16 +184,32 @@ class RegexTransformation extends AssemblyPhase {
 
 }
 
-class LiteralMerge extends AssemblyPhase {
-  private[this] val logger = getLogger
+/** Assigns unique ids to all derivation rules that have it as [[DerivationRule.DEFAULT_ID]]. */
+object AssignIds extends AssemblyPhase {
+  override def process(grammar: GrammarRepr): GrammarRepr = {
+    var nextId = 0
+
+    grammar.rules.values.flatMap(_.toStream)
+      .filter(_.id == DerivationRule.DEFAULT_ID)
+      .foreach { rule =>
+        rule.id = nextId
+        nextId += 1
+      }
+
+    grammar
+  }
+}
+
+object LiteralMerge extends AssemblyPhase {
+  private val logger = getLogger
 
   private def merged(rule: DerivationRule)(implicit grammar: GrammarRepr, merges: Box[Int]): DerivationRule = {
     val newRule = rule match {
-      case Concatenation(Literal(first, _) :: Literal(second, _) :: tail) =>
+      case Concatenation(Literal(first, _) :: Literal(second, _) :: tail, _) =>
         merges.value += 1
         val combined = Literal(first + second)
         if (tail.isEmpty) combined else merged(Concatenation(combined :: tail))
-      case Concatenation((lit@Literal(first, _)) :: (ref@Reference(something, _)) :: tail) =>
+      case Concatenation((lit@Literal(first, _)) :: (ref@Reference(something, _)) :: tail, _) =>
         // this can lead to unused references
         grammar.get(something) match {
           case Literal(second, _) =>
@@ -203,9 +218,9 @@ class LiteralMerge extends AssemblyPhase {
             if (tail.isEmpty) combined else merged(Concatenation(combined :: tail))
           case _ => Concatenation(lit :: ref :: tail.map(merged))
         }
-      case Concatenation(elements) => Concatenation(elements.map(merged))
-      case Quantification(subject, min, max) => Quantification(merged(subject), min, max)
-      case Alternation(alternatives) => Alternation(alternatives.map(merged))
+      case Concatenation(elements, _) => Concatenation(elements.map(merged))
+      case Quantification(subject, min, max, _) => Quantification(merged(subject), min, max)
+      case Alternation(alternatives, _) => Alternation(alternatives.map(merged))
       case _ => rule
     }
     newRule.probability = rule.probability
@@ -232,43 +247,19 @@ class LiteralMerge extends AssemblyPhase {
   }
 }
 
-class NodeDisambiguation extends AssemblyPhase {
-  private[this] val logger = getLogger
-  private val ids = mutable.Map[String, Int]() withDefaultValue 0
-  private var hits = 0
-
-  private def getAndInc(key: String): Int = {
-    val r = ids(key)
-    if (r != 0) hits += 1 // log a hit
-    ids(key) += 1
-    r
-  }
-
-  override def process(grammar: GrammarRepr): GrammarRepr = {
-    // cannot use grammar.foreach because at this point all terminals with equal strings have an id of 0 and are thus considered equal, and therefore multiple occurrences get filtered out
-    grammar.rules.values.flatMap(_.toStream).foreach {
-      case l@Literal(value, _) => l.id = getAndInc(value)
-      case r@Regex(value, _) => r.id = getAndInc(value)
-      case ref@Reference(name, _) => ref.id = getAndInc(name)
-      case _ =>
-    }
-    logger.info(s"Disambiguated $hits nodes")
-    grammar
-  }
-}
-
 trait ApproximateDoubleCalc {
   private val precision = 1E-9d
 
   protected def approxEqual(value: Double, other: Double): Boolean = (value - other).abs < precision
+
   protected def approxLess(value: Double, other: Double): Boolean = (other - value) > precision
 }
 
-class ProbabilityAssignment extends AssemblyPhase with ApproximateDoubleCalc {
-  private[this] val logger = getLogger
+object ProbabilityAssignment extends AssemblyPhase with ApproximateDoubleCalc {
+  private val logger = getLogger
 
   private def processRHS(lhs: NonTerminal, rhs: DerivationRule): Unit = rhs match {
-    case Alternation(alternatives) =>
+    case Alternation(alternatives, _) =>
       var p = 1.0d
       var unaccounted = mutable.ListBuffer[DerivationRule]()
       for (a <- alternatives) {
@@ -277,8 +268,8 @@ class ProbabilityAssignment extends AssemblyPhase with ApproximateDoubleCalc {
         else
           p -= a.probability
       }
-      if (approxLess(p,0)) throw new IllegalArgumentException(s"The alternatives for $lhs have cumulative probability > 1!")
-      if (approxEqual(p,0) && unaccounted.nonEmpty) logger.warn(s"Some un-annotated alternatives for $lhs have probability zero!")
+      if (approxLess(p, 0)) throw new IllegalArgumentException(s"The alternatives for $lhs have cumulative probability > 1!")
+      if (approxEqual(p, 0) && unaccounted.nonEmpty) logger.warn(s"Some un-annotated alternatives for $lhs have probability zero!")
       // uniformly distribute the remaining probability
       unaccounted.foreach(_.probability = p / unaccounted.size)
 
@@ -296,7 +287,7 @@ class ProbabilityAssignment extends AssemblyPhase with ApproximateDoubleCalc {
   }
 
   private def issueWarnings(lhs: NonTerminal, parent: DerivationRule): Unit = parent match {
-    case Alternation(alternatives) => alternatives.foreach(issueWarnings(lhs, _))
+    case Alternation(alternatives, _) => alternatives.foreach(issueWarnings(lhs, _))
     case _ =>
       val annotated = parent.children.filterNot(_.probability.isNaN)
       if (annotated.nonEmpty)
@@ -321,7 +312,7 @@ class ProbabilityAssignment extends AssemblyPhase with ApproximateDoubleCalc {
 class ProbabilityRemapping(damping: Double, similarity: Double) extends AssemblyPhase with ApproximateDoubleCalc {
   override def process(grammar: GrammarRepr): GrammarRepr = {
     grammar.rules.values.flatMap(_.toStream).foreach {
-      case Alternation(alternatives) =>
+      case Alternation(alternatives, _) =>
         assert(alternatives.forall(!_.probability.isNaN))
         val orderedAlts = alternatives.toList
 
@@ -355,7 +346,7 @@ object CheckDuplicateAlternatives extends AssemblyPhase {
   override def process(grammar: GrammarRepr): GrammarRepr = {
     val violations = mutable.ArrayBuffer[(NonTerminal, Seq[DerivationRule])]()
     grammar.rules.foreach {
-      case (production, Alternation(alts)) if alts.distinct.size != alts.size => violations += production -> alts
+      case (production, Alternation(alts, _)) if alts.distinct.size != alts.size => violations += production -> alts
       case _ =>
     }
     if (violations.nonEmpty) {
@@ -367,6 +358,35 @@ object CheckDuplicateAlternatives extends AssemblyPhase {
       }
       throw new IllegalArgumentException(s"Duplicate alternatives found in $message")
     }
+    grammar
+  }
+}
+
+/** Ensures all derivation rules have unique, valid ids. */
+object CheckIds extends AssemblyPhase {
+  private val logger = getLogger
+
+  override def process(grammar: GrammarRepr): GrammarRepr = {
+    var violations = false
+    val seenIds = mutable.HashSet[Int]()
+
+    grammar.rules.foreach { case (name, rule) =>
+      rule.toStream.foreach { subRule =>
+        if (seenIds(subRule.id)) {
+          logger.error(s"Duplicate id ${subRule.id} in rule $name at $subRule")
+          violations = true
+        } else if (subRule.id == DerivationRule.DEFAULT_ID) {
+          logger.error(s"Uninitialized id in rule $name ar $subRule")
+          violations = true
+        }
+        seenIds.add(subRule.id)
+      }
+    }
+
+    if (violations) {
+      throw new IllegalArgumentException("Invalid ids detected! See log for details.")
+    }
+
     grammar
   }
 }

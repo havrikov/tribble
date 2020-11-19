@@ -11,3 +11,14 @@ private[tribble] trait SharedAutomatonCache {
 private[tribble] trait SharedModelAssembler extends SharedAutomatonCache {
   val modelAssembler = new ModelAssembler(automatonCache, Double.MinPositiveValue, 1.0d)
 }
+
+/** Provides a model assembler which ensure that all derivation rules
+  * have their id set to [[de.cispa.se.tribble.DerivationRule.DEFAULT_ID]].
+  */
+private[tribble] trait SharedNoIdModelAssembler extends SharedAutomatonCache {
+  val modelAssembler: ModelAssembler = {
+    val assembler = new ModelAssembler(automatonCache, Double.MinPositiveValue, 1.0d, checkIds = false)
+    assembler.appendPhase(ResetIds)
+    assembler
+  }
+}

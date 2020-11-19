@@ -31,20 +31,20 @@ class MaxDepthGenerator(maxRepetitions: Int, random: Random, regexGenerator: Reg
       val leaf = DLeaf(l, parent, value)
       heuristic.createdNode(leaf)
       leaf
-    case a@Alternation(alternatives) =>
+    case a@Alternation(alternatives, _) =>
       val node = DNode(a, parent)
       heuristic.createdNode(node)
       // filter alternatives by depth
       val alternative = selectAlternative(alternatives, currentDepth, node)
       node.children(0) = limitedGenerate(alternative, Some(node), currentDepth + 1)
       node
-    case c@Concatenation(elements) =>
+    case c@Concatenation(elements, _) =>
       val node = DNode(c, parent)
       heuristic.createdNode(node)
       val trees = elements.map(limitedGenerate(_, Some(node), currentDepth + 1))
       node.children ++= trees.indices zip trees
       node
-    case q@Quantification(subj, min, max) =>
+    case q@Quantification(subj, min, max, _) =>
       val constrainedMax = Math.max(min, Math.min(max, maxRepetitions))
       val node = DNode(q, parent)
       heuristic.createdNode(node)

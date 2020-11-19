@@ -2,9 +2,9 @@ package de.cispa.se.tribble
 package model
 
 import de.cispa.se.tribble.dsl._
-import de.cispa.se.tribble.input.SharedModelAssembler
+import de.cispa.se.tribble.input.SharedNoIdModelAssembler
 
-class ParentTrackerSpec extends TestSpecification with SharedModelAssembler {
+class ParentTrackerSpec extends TestSpecification with SharedNoIdModelAssembler {
 
   private val g = Grammar(
     'S := 'A | 'B | "c" ~ ('E | 'F ~ "foo".rep),

@@ -39,6 +39,8 @@ package input
   * 'B := "b" ~ "a" ~ 'B
   * </pre></blockquote>
   *
+  * Note: will try to preserve rule ids.
+  *
   * @param inlineLevels how many times to repeat the inline operation.
   */
 class RuleInlining(private val inlineLevels: Int) extends AssemblyPhase {
@@ -61,9 +63,9 @@ class RuleInlining(private val inlineLevels: Int) extends AssemblyPhase {
 
   private def inlineRule(rule: DerivationRule)(implicit grammar: GrammarRepr): DerivationRule = rule match {
     case r: Reference => grammar.get(r)
-    case Concatenation(elements) => Concatenation(elements.map(inlineRule))
-    case Alternation(alts) => Alternation(alts.map(inlineRule))
-    case Quantification(subject, min, max) => Quantification(inlineRule(subject), min, max)
+    case Concatenation(elements, id) => Concatenation(elements.map(inlineRule), id)
+    case Alternation(alts, id) => Alternation(alts.map(inlineRule), id)
+    case Quantification(subject, min, max, id) => Quantification(inlineRule(subject), min, max, id)
     case rule: TerminalRule => rule
   }
 

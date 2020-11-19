@@ -6,8 +6,6 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.StandardOpenOption.APPEND
 
-import de.cispa.se.tribble.{Alternation, Concatenation, DNode, DTree, DerivationRule, GrammarRepr, NonTerminal, Quantification, Reference, TerminalRule}
-
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.util.Random
@@ -94,9 +92,9 @@ sealed trait NonTerminalReachabilityInformation {
   def grammar: GrammarRepr
   private def computeImmediateSteps(decl: DerivationRule, steps: Int = 0): Map[NonTerminal, Int] = decl match {
     case Reference(name, _) => Map(name -> steps)
-    case Concatenation(elements) => elements.flatMap(computeImmediateSteps(_, steps + 1))(collection.breakOut)
-    case Alternation(alternatives) => alternatives.flatMap(computeImmediateSteps(_, steps + 1))(collection.breakOut)
-    case Quantification(subject, _, _) => computeImmediateSteps(subject, steps + 1)
+    case Concatenation(elements, _) => elements.flatMap(computeImmediateSteps(_, steps + 1))(collection.breakOut)
+    case Alternation(alternatives, _) => alternatives.flatMap(computeImmediateSteps(_, steps + 1))(collection.breakOut)
+    case Quantification(subject, _, _, _) => computeImmediateSteps(subject, steps + 1)
     case _: TerminalRule => Map.empty
   }
 
@@ -295,9 +293,9 @@ trait ReachabilityInformation {
   def grammar: GrammarRepr
   protected def computeImmediateSteps(decl: DerivationRule, steps: Int = 0): Map[DerivationRule, Int] = decl match {
     case ref:Reference => Map(ref -> steps)
-    case Concatenation(elements) => elements.flatMap(computeImmediateSteps(_, steps + 1))(collection.breakOut)
-    case Alternation(alternatives) => alternatives.flatMap(computeImmediateSteps(_, steps + 1))(collection.breakOut)
-    case Quantification(subject, _, _) => computeImmediateSteps(subject, steps + 1)
+    case Concatenation(elements, _) => elements.flatMap(computeImmediateSteps(_, steps + 1))(collection.breakOut)
+    case Alternation(alternatives, _) => alternatives.flatMap(computeImmediateSteps(_, steps + 1))(collection.breakOut)
+    case Quantification(subject, _, _, _) => computeImmediateSteps(subject, steps + 1)
     case t: TerminalRule => Map(t -> steps)
   }
 

@@ -15,7 +15,7 @@ private[tribble] class ShortestTreeGenerator(regexGenerator: RegexGenerator, ran
       val node = DNode(ref, parent)
       node.children(0) = generate(grammar.get(name), Some(node))
       node
-    case a@Alternation(alternatives) =>
+    case a@Alternation(alternatives, _) =>
       // partition the alternatives by the shortest derivation and sort
       val partitions = alternatives.groupBy(_.shortestDerivation).toList.sortBy(_._1).map(_._2)
       // translate the close-off request into the partition number while clamping to the number of partitions
@@ -32,12 +32,12 @@ private[tribble] class ShortestTreeGenerator(regexGenerator: RegexGenerator, ran
         closeOffs(a) -= 1
       node.children(0) = generate(alternative, Some(node))
       node
-    case c@Concatenation(elements) =>
+    case c@Concatenation(elements, _) =>
       val node = DNode(c, parent)
       val trees = elements.map(generate(_, Some(node)))
       node.children ++= trees.indices zip trees
       node
-    case q@Quantification(subj, min, _) =>
+    case q@Quantification(subj, min, _, _) =>
       val node = DNode(q, parent)
       val num = if (min == 0 && closeOffs(q) > 0) 1 else min
       if (closeOffs(q) > 0)

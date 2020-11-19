@@ -3,7 +3,7 @@ package input
 
 import de.cispa.se.tribble.dsl._
 
-class AlternativeExtractionSpec extends TestSpecification with SharedModelAssembler {
+class AlternativeExtractionSpec extends TestSpecification with SharedNoIdModelAssembler {
 
   "The alternative extraction" should "extract alternatives" in {
     val g = Grammar(
@@ -16,9 +16,6 @@ class AlternativeExtractionSpec extends TestSpecification with SharedModelAssemb
     val grammar: GrammarRepr = modelAssembler.assemble(g.productions)
 
     val extracted: GrammarRepr = AlternativeExtraction.process(grammar)
-
-    // disambiguate newly created nodes
-    new NodeDisambiguation().process(extracted)
 
     val eG = Grammar(
       'S := 'A | 'B,

@@ -15,9 +15,9 @@ class GrammarLatexPrinter(private val grammar: GrammarRepr) {
 
   private def print(rule: DerivationRule): String = rule match {
     case Reference(name, _) => s"\\nonterm{$name}"
-    case Concatenation(elements) => recurseElements(elements, " ")
+    case Concatenation(elements, _) => recurseElements(elements, " ")
     case a: Alternation => recurseElements(a.alternatives, " | ")
-    case Quantification(subject, min, max) => s"${print(subject)}${
+    case Quantification(subject, min, max, _) => s"${print(subject)}${
       (min, max) match {
         case (0, 1) => ".?"
         case (0, Int.MaxValue) => ".rep"
