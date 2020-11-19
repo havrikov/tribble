@@ -76,13 +76,13 @@ object dsl {
 
     /** Flatten an alternation "(a | b) | c" into "a | b | c" if needed. */
     private def alternate(rhs: DerivationRule): Seq[DerivationRule] = rhs match {
-      case Alternation(alternatives) => alternatives
+      case a: Alternation => a.alternatives
       case _ => Seq(rhs)
     }
 
     /** Flatten a concatenation "(a ~ b) ~ c" into "a ~ b ~ c" if needed. */
     private def concatenate(rhs: DerivationRule): Seq[DerivationRule] = rhs match {
-      case Concatenation(elements) => elements
+      case c: Concatenation => c.elements
       case _ => Seq(rhs)
     }
   }
