@@ -5,7 +5,7 @@ import java.io.File
 
 class GrammarLoaderSpec extends TestSpecification with SharedModelAssembler {
 
-  private val loader = new GrammarLoader(CompileGrammar(modelAssembler), EmptyGrammarCache)
+  private val loader = new GrammarLoader(ParseGrammar(modelAssembler), EmptyGrammarCache)
 
   "The GrammarLoader" should "be able to load a valid grammar" in {
     val grammars = Table("path",
@@ -25,7 +25,7 @@ class GrammarLoaderSpec extends TestSpecification with SharedModelAssembler {
   }
 
   it should "not compile empty grammars" in {
-    assertThrows[java.lang.reflect.InvocationTargetException] {
+    assertThrows[IllegalArgumentException] {
       loader.loadGrammar(new File("src/test/resources/typesafe/Empty.scala"))
     }
   }
