@@ -1,31 +1,19 @@
 package de.cispa.se.tribble
 package input
 
-import java.io.{File => JFile}
-
-import better.files._
-import de.cispa.se.tribble.dsl.Grammar
-
-import scala.reflect.runtime.currentMirror
-import scala.tools.reflect.ToolBox
+import java.io.File
 
 
-private[tribble] class GrammarLoader(modelAssembler: ModelAssembler, grammarCache: GrammarCache) {
+/**
+  * Tries to load the corresponding grammar from the cache, or failing to do so,
+  * applies the given loading strategy to acquire the grammar from the given file.
+  */
+private[tribble] class GrammarLoader(loadingStrategy: LoadingStrategy, grammarCache: GrammarCache) {
 
-  private def compile(file: File): Grammar = {
-    val toolbox = currentMirror.mkToolBox()
-    val code = file.lines mkString "\n"
-    val preambula = "import de.cispa.se.tribble.dsl._;\n"
-    val tree = toolbox.parse(preambula + code)
-    toolbox.eval(tree).asInstanceOf[Grammar]
-  }
-
-  def loadGrammar(grammarFile: JFile): GrammarRepr = {
+  def loadGrammar(grammarFile: File): GrammarRepr = {
     grammarCache.loadGrammar(grammarFile.computeHash()) match {
       case Some(grammar) => grammar
-      case None =>
-        val productions = compile(grammarFile.toScala).productions
-        modelAssembler.assemble(productions)
+      case None => loadingStrategy.load(grammarFile)
     }
   }
 }

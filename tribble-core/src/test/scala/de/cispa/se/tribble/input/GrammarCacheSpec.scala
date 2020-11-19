@@ -31,7 +31,7 @@ class GrammarCacheSpec extends TestSpecification with SharedModelAssembler with 
       "Regex",
     )
 
-    val loader = new GrammarLoader(modelAssembler, EmptyGrammarCache)
+    val loader = new GrammarLoader(ParseGrammar(modelAssembler), EmptyGrammarCache)
 
     forAll(grammars) { name =>
       val grammar: GrammarRepr = loader.loadGrammar(new File(s"src/test/resources/typesafe/$name.scala"))

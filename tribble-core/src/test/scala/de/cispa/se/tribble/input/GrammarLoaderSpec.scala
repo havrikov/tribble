@@ -5,7 +5,7 @@ import java.io.File
 
 class GrammarLoaderSpec extends TestSpecification with SharedModelAssembler {
 
-  private val loader = new GrammarLoader(modelAssembler, EmptyGrammarCache)
+  private val loader = new GrammarLoader(CompileGrammar(modelAssembler), EmptyGrammarCache)
 
   "The GrammarLoader" should "be able to load a valid grammar" in {
     val grammars = Table("path",

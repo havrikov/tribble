@@ -5,13 +5,13 @@ import java.io.File
 
 import de.cispa.se.tribble.dsl._
 import de.cispa.se.tribble.TestDSL._
-import de.cispa.se.tribble.input.{EmptyGrammarCache, GrammarLoader, SharedModelAssembler}
+import de.cispa.se.tribble.input.{EmptyGrammarCache, GrammarLoader, ParseGrammar, SharedModelAssembler}
 import de.cispa.se.tribble.output.KPathEvaluator
 import org.scalatest.prop.{TableFor1, TableFor2}
 
 class KPathEvaluatorSpec extends TestSpecification with SharedModelAssembler with StructuralDerivationRuleEquality {
 
-  private val loader = new GrammarLoader(modelAssembler, EmptyGrammarCache)
+  private val loader = new GrammarLoader(ParseGrammar(modelAssembler), EmptyGrammarCache)
   private val grammar: GrammarRepr = loader.loadGrammar(new File("src/test/resources/typesafe/Expr.scala"))
   private val tracker = new ParentTracker(grammar)
 

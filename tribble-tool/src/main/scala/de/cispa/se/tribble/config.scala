@@ -54,11 +54,17 @@ trait GrammarModule { self: Command =>
   var checkDuplicateAlternatives: Boolean = opt[Boolean](default = true, name ="no-check-duplicate-alts", description = "Allow duplicate alternatives in alternations.")
   var checkIds: Boolean = opt[Boolean](default = true, name ="no-check-ids", description = "Allow inconsistent ids in derivation rules.")
   lazy val modelAssembler: ModelAssembler = new ModelAssembler(automatonCache, damping, similarity, unfoldRegexes, mergeLiterals, checkDuplicateAlternatives, checkIds)
-  var compileGrammar: Boolean = opt[Boolean](description = "Compile the grammar with the scala compiler instead of parsing it as data. Not recommended.")
-  lazy val grammarLoader: GrammarLoader = new GrammarLoader(modelAssembler, grammarCache)
+
+  var loadingStrategy: String = opt[String](default = "parse", description = "How to process the grammar file. Valid options are parse, compile, and unmarshal.")
+  lazy val loadingStrategyImpl: LoadingStrategy = loadingStrategy match {
+    case "parse" => ParseGrammar(modelAssembler)
+    case "compile" => CompileGrammar(modelAssembler)
+    case "unmarshal" => UnmarshalGrammar
+    case _ => throw new IllegalArgumentException(s"Unknown loading strategy $loadingStrategy")
+  }
+  lazy val grammarLoader: GrammarLoader = new GrammarLoader(loadingStrategyImpl, grammarCache)
   var grammarFile: File = arg[File](description = "Path to the grammar file")
-  lazy val grammarBuilder: GrammarBuilder = new GrammarBuilder(modelAssembler, grammarCache)
-  lazy val grammar: GrammarRepr = if (grammarFile.getName.endsWith(".scala") && compileGrammar) grammarLoader.loadGrammar(grammarFile) else grammarBuilder.buildGrammar(grammarFile)
+  lazy val grammar: GrammarRepr = grammarLoader.loadGrammar(grammarFile)
 }
 
 trait ConstraintModule { self: Command =>
