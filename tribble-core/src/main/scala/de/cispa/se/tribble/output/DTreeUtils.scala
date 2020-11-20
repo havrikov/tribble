@@ -43,4 +43,6 @@ object DTreeUtils {
 
   }
 
+  // For Java compatibility
+  def toDot(tree: DTree): String = tree.toDot
 }
