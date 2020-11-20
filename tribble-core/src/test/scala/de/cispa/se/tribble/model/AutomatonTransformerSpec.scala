@@ -1,11 +1,13 @@
 package de.cispa.se.tribble
 package model
 
+import better.files._
 import de.cispa.se.tribble.dsl._
+import de.cispa.se.tribble.input.{ModelAssembler, ParseGrammar, SharedAutomatonCache}
 import dk.brics.automaton.RegExp
 import org.scalatest.prop.TableFor2
 
-class AutomatonTransformerSpec extends TestSpecification {
+class AutomatonTransformerSpec extends TestSpecification with SharedAutomatonCache {
 
   private def transformed(regex: String) = {
     val automaton = new RegExp(regex, RegExp.COMPLEMENT | RegExp.INTERSECTION).toAutomaton
@@ -57,6 +59,23 @@ class AutomatonTransformerSpec extends TestSpecification {
     )
 
     forAll(grammars) { (regex, expected) => transformed(regex) shouldEqual expected }
+  }
+
+  it should "leave ids of newly created rules unassigned" in {
+    val content =
+      """
+        |Grammar(
+        |'S := "[^a]*".regex
+        |)
+        |""".stripMargin
+
+    val file = "build" / "tmp" / "test" / "regex_id_test.scala"
+    file.createFileIfNotExists(createParents = true)
+      .overwrite(content)
+
+    val modelAssembler = new ModelAssembler(automatonCache, Double.MinPositiveValue, 1.0d, transformRegexes = true, checkIds = true)
+    // this must not throw
+    ParseGrammar(modelAssembler).load(file.toJava)
   }
 
 }

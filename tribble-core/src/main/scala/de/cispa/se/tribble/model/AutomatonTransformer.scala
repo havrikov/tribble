@@ -42,9 +42,9 @@ private[tribble] object AutomatonTransformer {
             val continuation = states(destState)
             if (destState.isAccept)
             // if it also can be stopped here
-              Seq(Concatenation(Seq(terminal, continuation)), transformTransition(transition)) // making sure to create a separate object
+              Seq(Concatenation(Seq(terminal, Reference(continuation.name))), transformTransition(transition)) // making sure to create a separate object
             else
-              Seq(Concatenation(Seq(terminal, continuation)))
+              Seq(Concatenation(Seq(terminal, Reference(continuation.name))))
           } else {
             Seq(terminal)
           }
@@ -68,7 +68,7 @@ private[tribble] object AutomatonTransformer {
       Alternation((min to max).map(c => Literal(c.toString)))
     } else {
       // split up into sub-ranges
-      Alternation((min to max).grouped((max - min) / ALTERNATIVE_SPLIT).map(v => new Regex(v.head, v.last, 0)).toSeq)
+      Alternation((min to max).grouped((max - min) / ALTERNATIVE_SPLIT).map(v => new Regex(v.head, v.last, DerivationRule.DEFAULT_ID)).toSeq)
     }
   }
 
