@@ -13,8 +13,8 @@ import scala.util.Random
 /**
   * Provides a way to choose the slot to expand next when generating derivation trees.
   */
-sealed trait Heuristic {
-  /** removes the next slot to fill from the given queue */
+trait Heuristic {
+  /** Removes the next slot to fill from the given queue. */
   final def pickNext(q: mutable.ListBuffer[Slot]): Slot = {
     require(q.nonEmpty, "Cannot pick from an empty queue!")
     if (q.lengthCompare(1) == 0)
@@ -25,49 +25,38 @@ sealed trait Heuristic {
 
   protected def makeChoice(q: mutable.ListBuffer[Slot]): Slot
 
-  def createdNode(node: DTree): Unit
+  def createdNode(node: DTree): Unit = ()
 
-  def startedTree(): Unit
+  def startedTree(): Unit = ()
 
-  def finishedTree(root: DTree): Unit
+  def finishedTree(root: DTree): Unit = ()
 }
 
 /* *********************************************************** RANDOM CHOICE ***************************************************************** */
 
-/**
-  * Provides a uniformly random choice
-  */
-final class RandomChoice(random: Random) extends Heuristic {
+/** Provides a uniformly random choice. */
+sealed class RandomChoice(random: Random) extends Heuristic {
   override def makeChoice(q: ListBuffer[Slot]): Slot = q.remove(random.nextInt(q.size))
-
-  override def createdNode(node: DTree): Unit = ()
-
-  override def startedTree(): Unit = ()
-
-  override def finishedTree(root: DTree): Unit = ()
 }
 
-final class BookKeepingRandomChoice(random: Random, grammar: GrammarRepr) extends Heuristic {
+/** Provides a uniformly random choice and also logs the number of uses for each reference  */
+final class BookKeepingRandomChoice(random: Random, private val grammar: GrammarRepr) extends RandomChoice(random) {
   private val usages = mutable.Map[NonTerminal, Int]() withDefaultValue 0
   private val dumpFile = new File("dump_brandom.csv").toPath
-  Files.write(dumpFile, grammar.rules.keySet.toSeq.sorted.mkString("size,",",","\n").getBytes(StandardCharsets.UTF_8))
+  Files.write(dumpFile, grammar.rules.keySet.toSeq.sorted.mkString("size,", ",", "\n").getBytes(StandardCharsets.UTF_8))
 
   override def createdNode(node: DTree): Unit = node.decl match {
     case Reference(name, _) => usages(name) += 1
     case _ => // this particular choice is irrelevant to this heuristic
   }
 
-  override def makeChoice(q: ListBuffer[Slot]): Slot = q.remove(random.nextInt(q.size))
-
   override def finishedTree(tree: DTree): Unit = {
     val usg = grammar.rules.keySet.toSeq.sorted.map(usages)
     Files.write(dumpFile, (tree.size() +: usg).mkString("", ",", "\n").getBytes(StandardCharsets.UTF_8), APPEND)
   }
-
-  override def startedTree(): Unit = ()
 }
 
-final class LRUChoice(random: Random, resetForEachTree: Boolean = false) extends Heuristic {
+final class LRUChoice(random: Random, private val resetForEachTree: Boolean = false) extends Heuristic {
   private val usages = mutable.Map[DerivationRule, Int]() withDefaultValue 0
 
   override protected def makeChoice(q: ListBuffer[Slot]): Slot = {
@@ -81,8 +70,6 @@ final class LRUChoice(random: Random, resetForEachTree: Boolean = false) extends
   override def createdNode(node: DTree): Unit = usages(node.decl) += 1
 
   override def startedTree(): Unit = if (resetForEachTree) usages.clear()
-
-  override def finishedTree(root: DTree): Unit = ()
 }
 
 /* ******************************************************** NONTERMINAL METRICS ************************************************************** */
@@ -90,6 +77,7 @@ final class LRUChoice(random: Random, resetForEachTree: Boolean = false) extends
 
 sealed trait NonTerminalReachabilityInformation {
   def grammar: GrammarRepr
+
   private def computeImmediateSteps(decl: DerivationRule, steps: Int = 0): Map[NonTerminal, Int] = decl match {
     case Reference(name, _) => Map(name -> steps)
     case Concatenation(elements, _) => elements.flatMap(computeImmediateSteps(_, steps + 1))(collection.breakOut)
@@ -156,7 +144,7 @@ sealed abstract class AbstractUsageCoverage(random: Random, val grammar: Grammar
     case class Selection(score: Double, index: Int)
     val leastConsideredSelections = mutable.ListBuffer[Selection]()
 
-    for ((slot@Slot(decl,_,_), i) <- q.zipWithIndex) {
+    for ((slot@Slot(decl, _, _), i) <- q.zipWithIndex) {
       val reach = reachability(decl)
 
       val score: Double = if (reach.nonEmpty) reach.map { case (n, s) => computeScore(n, s, slot) }.min else Double.MaxValue
@@ -210,7 +198,7 @@ final class NWindowPairNonTerminalCoverage(n: Int, random: Random, grammar: Gram
   private val pairUsages = mutable.Map[(NonTerminal, NonTerminal), Int]() withDefaultValue 0
   // TODO possibly find a factor like maxDistance
 
-  /**  computes the set of all pairs of nonterminals created by deriving `to` from `parent` */
+  /** Computes the set of all pairs of nonterminals created by deriving `to` from `parent` */
   private def pairs(to: NonTerminal, parent: Option[DNode]): Set[(NonTerminal, NonTerminal)] = {
     val res = mutable.HashSet[(NonTerminal, NonTerminal)]()
     var p = parent
@@ -237,8 +225,8 @@ final class NWindowPairNonTerminalCoverage(n: Int, random: Random, grammar: Gram
   }
 
   override def createdNode(node: DTree): Unit = node.decl match {
-      case Reference(name, _) => pairs(name, node.parent).foreach(pairUsages(_) += 1)
-      case _ => // uninteresting
+    case Reference(name, _) => pairs(name, node.parent).foreach(pairUsages(_) += 1)
+    case _ => // uninteresting
   }
 
   override def startedTree(): Unit = ()
@@ -261,7 +249,7 @@ final class KPathNonTerminalCoverage(k: Int, random: Random, grammar: GrammarRep
           res.prepend(name)
           i += 1
         case _ =>
-          // we do not count this towards i
+        // we do not count this towards i
       }
       p = node.parent
     }
@@ -276,8 +264,8 @@ final class KPathNonTerminalCoverage(k: Int, random: Random, grammar: GrammarRep
   }
 
   override def createdNode(node: DTree): Unit = node.decl match {
-      case Reference(name, _) => usages(getKTuple(name, node.parent)) += 1
-      case _ => // uninteresting
+    case Reference(name, _) => usages(getKTuple(name, node.parent)) += 1
+    case _ => // uninteresting
   }
 
   override def startedTree(): Unit = ()
@@ -291,8 +279,9 @@ final class KPathNonTerminalCoverage(k: Int, random: Random, grammar: GrammarRep
 // TODO refactor with above into one implementation by extracting a filtering function
 trait ReachabilityInformation {
   def grammar: GrammarRepr
+
   protected def computeImmediateSteps(decl: DerivationRule, steps: Int = 0): Map[DerivationRule, Int] = decl match {
-    case ref:Reference => Map(ref -> steps)
+    case ref: Reference => Map(ref -> steps)
     case Concatenation(elements, _) => elements.flatMap(computeImmediateSteps(_, steps + 1))(collection.breakOut)
     case Alternation(alternatives, _) => alternatives.flatMap(computeImmediateSteps(_, steps + 1))(collection.breakOut)
     case Quantification(subject, _, _, _) => computeImmediateSteps(subject, steps + 1)
@@ -304,10 +293,10 @@ trait ReachabilityInformation {
     val seen = mutable.HashSet[NonTerminal]()
     // initialize with immediately reachable nonterminals and terminals
     decl match {
-      case ref@Reference(name,_) =>
+      case ref@Reference(name, _) =>
         current ++= transitions(name)
         current += ref -> 0 // a reference is immediately reachable from itself
-      case t:TerminalRule =>
+      case t: TerminalRule =>
         current += t -> 0 // a terminal node is also immediately reachable from itself
       case _ => current ++= computeImmediateSteps(decl)
     }
@@ -315,7 +304,7 @@ trait ReachabilityInformation {
     var distance = 1
     var newNonTerms = 0
     do {
-      val unexplored = current.keys.collect{case Reference(name,_) => name}.filterNot(seen).toList
+      val unexplored = current.keys.collect { case Reference(name, _) => name }.filterNot(seen).toList
       val discovery = unexplored.map(transitions).map(_.mapValues(_ + distance))
       newNonTerms = unexplored.size
       seen ++= unexplored
@@ -354,7 +343,7 @@ trait ReachabilityInformation {
 }
 
 
-private[tribble] class KPathCoverage(k: Int, random: Random, val grammar: GrammarRepr) extends Heuristic with ReachabilityInformation  {
+private[tribble] class KPathCoverage(k: Int, random: Random, val grammar: GrammarRepr) extends Heuristic with ReachabilityInformation {
   require(k > 0, s"k must be positive! ($k given)")
   private val usages = mutable.Map[List[DerivationRule], Int]() withDefaultValue 0
 
@@ -383,12 +372,12 @@ private[tribble] class KPathCoverage(k: Int, random: Random, val grammar: Gramma
     res.toList
   }
 
-  override def createdNode(node: DTree): Unit =  node.decl match {
-    case ref:Reference =>
-//      println(ref)
+  override def createdNode(node: DTree): Unit = node.decl match {
+    case ref: Reference =>
+      //      println(ref)
       usages(getKTuple(ref, node.parent)) += 1
     case t: TerminalRule =>
-//      println(t)
+      //      println(t)
       usages(getKTuple(t, node.parent)) += 1
     case _ => // uninteresting
   }
@@ -397,7 +386,7 @@ private[tribble] class KPathCoverage(k: Int, random: Random, val grammar: Gramma
     case class Selection(score: Double, index: Int)
     val leastConsideredSelections = mutable.ListBuffer[Selection]()
 
-    for ((slot@Slot(decl,_,_), i) <- q.zipWithIndex) {
+    for ((slot@Slot(decl, _, _), i) <- q.zipWithIndex) {
       val reach = reachability(decl)
       val score: Double = if (reach.nonEmpty) reach.map { case (n, s) => computeScore(n, s, slot) }.min else Double.MaxValue
       if (leastConsideredSelections.isEmpty || score <= leastConsideredSelections.head.score) {
