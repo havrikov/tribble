@@ -11,7 +11,7 @@ import scala.collection.mutable
 private[tribble] class AutomatonCache(storageDir: File) {
   require(storageDir.isDirectory, s"The persistent automaton storage must be a directory! (Given $storageDir)")
   require(storageDir.exists(), "The persistent automaton storage must exist!")
-  private[this] val logger = getLogger
+  private val logger = getLogger
 
   logger.debug(s"Reading stored automata from $storageDir")
   private val storage: mutable.Map[String, Automaton] = mutable.Map(storageDir.listFiles()

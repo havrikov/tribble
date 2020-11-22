@@ -32,7 +32,7 @@ class ContinuingForestAdapter(generator: ForestGenerator, treeGenerator: TreeGen
 
 class SizedForestAdapter(min: Int, max: Int, n: Int, heuristic: Heuristic, maxRepetitions: Int)(implicit grammar: GrammarRepr, random: Random, shortestTreeGenerator: ShortestTreeGenerator) extends ForestGenerator {
   require(min < max, s"Min must be smaller than Max! ($min >= $max given)")
-  private[this] val logger = getLogger
+  private val logger = getLogger
 
   override def generateForest(): Iterable[DTree] = {
     var size = (max - min) / 2

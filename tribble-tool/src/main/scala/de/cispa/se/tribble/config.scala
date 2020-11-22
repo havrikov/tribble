@@ -18,7 +18,7 @@ trait RandomnessModule { self: Command =>
 }
 
 trait CacheModule { self: Command =>
-  private[this] val logger = getLogger
+  private val logger = getLogger
   var automatonDir: File = opt[File](default = new File("automata"), description = "The automaton cache directory. Default \"automata\"")
   lazy val automatonCache: AutomatonCache = {
     Files.createDirectories(automatonDir.toPath)

@@ -8,7 +8,7 @@ import scala.util.Random
 
 class MaxDepthGenerator(maxRepetitions: Int, random: Random, regexGenerator: RegexGenerator, maxDepth: Int, heuristic: Heuristic) extends TreeGenerator {
   require(maxDepth > 0, s"The maximum depth must be positive ($maxDepth given).")
-  private[this] val logger = getLogger
+  private val logger = getLogger
 
   override def gen(rule: DerivationRule, parent: Option[DNode], currentDepth: Int)(implicit grammar: GrammarRepr): DTree = {
     heuristic.startedTree()

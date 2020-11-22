@@ -15,7 +15,7 @@ import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 import scala.util.Random
 
 class NaiveProbabilisticTreeGeneratorSpec extends TestSpecification with ScalaCheckDrivenPropertyChecks {
-  private[this] val logger = getLogger
+  private val logger = getLogger
   private val seed = Random.nextLong()
   logger.debug(s"Testing with seed $seed")
   private val random = new Random(seed)

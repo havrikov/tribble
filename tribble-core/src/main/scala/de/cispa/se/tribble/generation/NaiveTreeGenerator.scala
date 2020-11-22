@@ -8,7 +8,7 @@ import scala.util.Random
 
 private[tribble] class NaiveTreeGenerator(maxRepetitions: Int, regexGenerator: RegexGenerator, maxDepth: Int, random: Random) extends TreeGenerator {
   require(maxDepth > 0, s"The maximum depth must be positive ($maxDepth given).")
-  private[this] val logger = getLogger
+  private val logger = getLogger
 
   override private[tribble] def gen(rule: DerivationRule, parent: Option[DNode], depth: Int)(implicit grammar: GrammarRepr): DTree = {
     rule match {

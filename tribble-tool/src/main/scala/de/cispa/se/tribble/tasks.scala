@@ -15,7 +15,7 @@ trait Task {
 
 final class GenerateTask extends Command("generate", "Generate sample inputs")
   with Task with ForestGeneratorModule with OutputModule with RandomnessModule with GrammarModule with CacheModule with RegexModule with ReportingModule with HeuristicModule with CloseOffControlModule with ConstraintModule {
-  private[this] val logger = getLogger
+  private val logger = getLogger
 
   override def execute(): Unit = {
     logger.info(s"Using random seed $randomSeed")
@@ -56,7 +56,7 @@ final class ExtractAlternativesTask extends Command("extract-alternatives", "Out
 
 final class GenerateForestationTask extends Command(name = "forestation", description = "Generate a forest of forests spanning a k-path coverage saturation range")
   with Task with ForestationGenerationModule with OutputModule with RandomnessModule with GrammarModule with CacheModule with RegexModule with HeuristicModule with CloseOffControlModule {
-  private[this] val logger = getLogger
+  private val logger = getLogger
 
   override def execute(): Unit = {
     logger.info(s"Using random seed $randomSeed")
