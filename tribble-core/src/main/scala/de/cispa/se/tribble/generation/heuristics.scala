@@ -187,9 +187,6 @@ final class NonTerminalCoverage(random: Random, grammar: GrammarRepr) extends Ab
     case _ => // this particular choice is irrelevant to this heuristic
   }
 
-  override def startedTree(): Unit = ()
-
-  override def finishedTree(root: DTree): Unit = ()
 }
 
 final class NWindowPairNonTerminalCoverage(n: Int, random: Random, grammar: GrammarRepr) extends AbstractUsageCoverage(random, grammar) {
@@ -228,10 +225,6 @@ final class NWindowPairNonTerminalCoverage(n: Int, random: Random, grammar: Gram
     case Reference(name, _) => pairs(name, node.parent).foreach(pairUsages(_) += 1)
     case _ => // uninteresting
   }
-
-  override def startedTree(): Unit = ()
-
-  override def finishedTree(root: DTree): Unit = ()
 }
 
 final class KPathNonTerminalCoverage(k: Int, random: Random, grammar: GrammarRepr) extends AbstractUsageCoverage(random, grammar) {
@@ -267,10 +260,6 @@ final class KPathNonTerminalCoverage(k: Int, random: Random, grammar: GrammarRep
     case Reference(name, _) => usages(getKTuple(name, node.parent)) += 1
     case _ => // uninteresting
   }
-
-  override def startedTree(): Unit = ()
-
-  override def finishedTree(root: DTree): Unit = ()
 }
 
 
@@ -402,8 +391,4 @@ private[tribble] class KPathCoverage(k: Int, random: Random, val grammar: Gramma
 
     q.remove(candidate.index)
   }
-
-  override def startedTree(): Unit = ()
-
-  override def finishedTree(root: DTree): Unit = ()
 }
