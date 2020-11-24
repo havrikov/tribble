@@ -28,7 +28,7 @@ class RuleInliningSpec extends TestSpecification with SharedModelAssembler {
     for (repetitions <- 1 to 7) {
       val inlining = new RuleInlining(repetitions)
       val inlined = inlining.process(grammar)
-      inlined.get("A").toStream.length shouldEqual math.pow(2, repetitions + 2).intValue + 1
+      inlined("A").toStream.length shouldEqual math.pow(2, repetitions + 2).intValue + 1
     }
   }
 }

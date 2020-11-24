@@ -7,7 +7,7 @@ import scala.util.Random
 private[tribble] class SizedTreeGenerator(maxRepetitions: Int, random: Random, shortestTreeGenerator: ShortestTreeGenerator, requestedSize: Int, heuristic: Heuristic) extends TreeGenerator {
 
   private def childSlots(node: DNode)(implicit grammar: GrammarRepr): Seq[Slot] = node.decl match {
-      case r: Reference => Slot(grammar.get(r), 0, node) :: Nil
+      case r: Reference => Slot(grammar(r), 0, node) :: Nil
       case Concatenation(elements, _) => elements.zipWithIndex.map { case (e, i) => Slot(e, i, node) }
       case Alternation(alternatives, _) =>
         // try to choose the most slot-rich alternative

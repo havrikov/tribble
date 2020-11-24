@@ -58,7 +58,7 @@ class KPathCoverageGoal(k: Int)(implicit val grammar: GrammarRepr, implicit val 
       return Set(prefix)
     }
     val start = prefix.head
-    val immediateSteps = computeImmediateSteps(grammar.get(start)).keys // reachability(grammar(start)).withFilter(_._2 == 0).map(_._1)
+    val immediateSteps = computeImmediateSteps(grammar(start)).keys // reachability(grammar(start)).withFilter(_._2 == 0).map(_._1)
     if (prefix.lengthCompare(k - 1) == 0) { // last element: nonterminals and terminals allowed as last element
       immediateSteps.collect { case ref: Reference => ref case t: TerminalRule => t }.map(x => (x :: prefix).reverse).toSet
     } else { // only interested in nonterminals

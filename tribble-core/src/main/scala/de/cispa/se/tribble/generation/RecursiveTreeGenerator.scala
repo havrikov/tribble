@@ -42,7 +42,7 @@ abstract class RecursiveTreeGenerator(protected val regexGenerator: RegexGenerat
   protected def instantiateReference(ref: Reference, parent: Option[DNode], currentDepth: Int)(implicit grammar: GrammarRepr): DTree = {
     val node = DNode(ref, parent)
     prepareNode(node)
-    node.children(0) = gen(grammar.get(ref), Some(node), currentDepth + 1)
+    node.children(0) = gen(grammar(ref), Some(node), currentDepth + 1)
     node
   }
 

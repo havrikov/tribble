@@ -211,7 +211,7 @@ object LiteralMerge extends AssemblyPhase {
         if (tail.isEmpty) combined else merged(Concatenation(combined :: tail))
       case Concatenation((lit@Literal(first, _)) :: (ref@Reference(something, _)) :: tail, _) =>
         // this can lead to unused references
-        grammar.get(something) match {
+        grammar(something) match {
           case Literal(second, _) =>
             merges.value += 1
             val combined = Literal(first + second)

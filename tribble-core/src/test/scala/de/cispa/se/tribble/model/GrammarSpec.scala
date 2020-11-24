@@ -9,8 +9,8 @@ class GrammarSpec extends TestSpecification {
 
   "The Grammar" should "be usable like a map" in {
     val b: Reference = 'B
-    grammar.get("A") shouldEqual b
-    grammar.get(b) shouldEqual Literal("b")
+    grammar("A") shouldEqual b
+    grammar(b) shouldEqual Literal("b")
   }
 
 

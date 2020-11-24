@@ -10,7 +10,7 @@ private[tribble] class GoalBasedTreeGenerator(closeOffGenerator: TreeGenerator, 
     rule match {
       case ref@Reference(name, _) =>
         val node = DNode(ref, parent)
-        node.children(0) = gen(grammar.get(name), Some(node), currentDepth + 1)
+        node.children(0) = gen(grammar(name), Some(node), currentDepth + 1)
         node
       case a@Alternation(alternatives, _) =>
         // if the current target is not yet reached, take an alternative leading there fastest

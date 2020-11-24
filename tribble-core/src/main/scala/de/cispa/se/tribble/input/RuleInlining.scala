@@ -62,7 +62,7 @@ class RuleInlining(private val inlineLevels: Int) extends AssemblyPhase {
   }
 
   private def inlineRule(rule: DerivationRule)(implicit grammar: GrammarRepr): DerivationRule = rule match {
-    case r: Reference => grammar.get(r)
+    case r: Reference => grammar(r)
     case Concatenation(elements, id) => Concatenation(elements.map(inlineRule), id)
     case Alternation(alts, id) => Alternation(alts.map(inlineRule), id)
     case Quantification(subject, min, max, id) => Quantification(inlineRule(subject), min, max, id)

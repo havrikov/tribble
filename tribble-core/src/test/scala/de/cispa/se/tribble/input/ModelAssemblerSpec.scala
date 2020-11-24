@@ -66,7 +66,7 @@ class ModelAssemblerSpec extends TestSpecification with SharedModelAssembler {
     )
 
     forAll (grammars) {grammar =>
-      inside (modelAssembler.assemble(grammar).get("A")) { case Alternation(alts, _) =>
+      inside (modelAssembler.assemble(grammar)("A")) { case Alternation(alts, _) =>
         alts.map(_.probability).sum === 1.0 +- 1E-9
       }
     }
