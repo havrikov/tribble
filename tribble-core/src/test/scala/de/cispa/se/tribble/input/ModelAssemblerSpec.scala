@@ -4,7 +4,7 @@ package input
 import de.cispa.se.tribble.dsl._
 import de.cispa.se.tribble.TestDSL._
 
-class ModelAssemblerSpec extends TestSpecification with SharedModelAssembler {
+class ModelAssemblerSpec extends TestSpecification with SharedModelAssembler with SharedAutomatonCache {
 
   "The ModelAssembler" should "assemble simple grammars correctly" in {
     val grammars = Table(("productions", "grammar"),
@@ -79,8 +79,9 @@ class ModelAssemblerSpec extends TestSpecification with SharedModelAssembler {
       Seq('A := "a" @@ 0.667 | "b" @@ .33 ~ "c" @@ .3333)
     )
 
+    val assembler = new ModelAssembler(automatonCache)
     forAll(grammars) { grammar =>
-      an [IllegalArgumentException] should be thrownBy modelAssembler.assemble(grammar)
+      an [IllegalArgumentException] should be thrownBy assembler.assemble(grammar)
     }
 
   }

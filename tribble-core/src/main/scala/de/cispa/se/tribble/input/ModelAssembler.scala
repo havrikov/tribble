@@ -10,12 +10,13 @@ import scala.collection.mutable
 
 private[tribble] class ModelAssembler(
                                        automatonCache: AutomatonCache,
-                                       damping: Double,
-                                       similarity: Double,
+                                       damping: Double = Double.MinPositiveValue,
+                                       similarity: Double = 1.0d,
                                        transformRegexes: Boolean = false,
                                        mergeLiterals: Boolean = false,
                                        checkDuplicateAlternatives: Boolean = true,
                                        checkIds: Boolean = true,
+                                       assignProbabilities: Boolean = true,
                                      ) {
 
   private val phases = mutable.ListBuffer[AssemblyPhase]()
@@ -28,8 +29,10 @@ private[tribble] class ModelAssembler(
   appendPhase(AssignIds)
   if (checkIds) appendPhase(CheckIds)
   appendPhase(ShortestDerivationComputation)
-  appendPhase(ProbabilityAssignment)
-  appendPhase(new ProbabilityRemapping(damping, similarity))
+  if (assignProbabilities) {
+    appendPhase(ProbabilityAssignment)
+    appendPhase(new ProbabilityRemapping(damping, similarity))
+  }
   appendPhase(GrammarStatistics)
 
   def assemble(productions: Seq[Production]): GrammarRepr = {

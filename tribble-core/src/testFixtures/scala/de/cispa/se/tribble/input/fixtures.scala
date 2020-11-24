@@ -9,7 +9,7 @@ private[tribble] trait SharedAutomatonCache {
 }
 
 private[tribble] trait SharedModelAssembler extends SharedAutomatonCache {
-  val modelAssembler = new ModelAssembler(automatonCache, Double.MinPositiveValue, 1.0d)
+  val modelAssembler = new ModelAssembler(automatonCache, assignProbabilities = false)
 }
 
 /** Provides a model assembler which ensure that all derivation rules
@@ -17,7 +17,7 @@ private[tribble] trait SharedModelAssembler extends SharedAutomatonCache {
   */
 private[tribble] trait SharedNoIdModelAssembler extends SharedAutomatonCache {
   val modelAssembler: ModelAssembler = {
-    val assembler = new ModelAssembler(automatonCache, Double.MinPositiveValue, 1.0d, checkIds = false)
+    val assembler = new ModelAssembler(automatonCache, checkIds = false, assignProbabilities = false)
     assembler.appendPhase(ResetIds)
     assembler
   }
