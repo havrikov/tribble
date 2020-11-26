@@ -75,70 +75,7 @@ final class LRUChoice(random: Random, private val resetForEachTree: Boolean = fa
 /* ******************************************************** NONTERMINAL METRICS ************************************************************** */
 
 
-sealed trait NonTerminalReachabilityInformation {
-  def grammar: GrammarRepr
-
-  private def computeImmediateSteps(decl: DerivationRule, steps: Int = 0): Map[NonTerminal, Int] = decl match {
-    case Reference(name, _) => Map(name -> steps)
-    case Concatenation(elements, _) => elements.flatMap(computeImmediateSteps(_, steps + 1))(collection.breakOut)
-    case Alternation(alternatives, _) => alternatives.flatMap(computeImmediateSteps(_, steps + 1))(collection.breakOut)
-    case Quantification(subject, _, _, _) => computeImmediateSteps(subject, steps + 1)
-    case _: TerminalRule => Map.empty
-  }
-
-  private def reachable(decl: DerivationRule, transitions: mutable.Map[NonTerminal, Map[NonTerminal, Int]]): mutable.Map[NonTerminal, Int] = {
-    val current = mutable.HashMap[NonTerminal, Int]()
-    val seen = mutable.HashSet[NonTerminal]()
-    // initialize with immediately reachable non terminals
-    decl match {
-      case Reference(name, _) =>
-        current ++= transitions(name)
-        current += name -> 0 // a reference is immediately reachable from itself
-      case _ => current ++= computeImmediateSteps(decl)
-    }
-
-    var distance = 1
-    var newNonTerms = 0
-    do {
-      val unexplored = current.keys.filterNot(seen).toList
-      val discovery = unexplored.map(transitions).map(_.mapValues(_ + distance))
-      newNonTerms = unexplored.size
-      seen ++= unexplored
-
-      for {
-        discovered <- discovery
-        (d, v) <- discovered
-      } {
-        if (!current.contains(d) || v < current(d)) {
-          current(d) = v
-        }
-      }
-      distance += 1
-
-    } while (newNonTerms > 0)
-
-    current
-  }
-
-  /** Computes for a declaration all reachable nonterminals and the number of steps needed to reach them. */
-  protected val reachability: Map[DerivationRule, mutable.Map[NonTerminal, Int]] = {
-    // phase 1: compute immediate transition map
-    val transitionalMap = mutable.HashMap[NonTerminal, Map[NonTerminal, Int]]() withDefault (_ => Map.empty)
-    for ((nonTerm, rhs) <- grammar.rules) {
-      transitionalMap(nonTerm) = computeImmediateSteps(rhs)
-    }
-    // phase 2: compute reachability map for all derivation rules
-    val tmp = mutable.HashMap[DerivationRule, mutable.Map[NonTerminal, Int]]() withDefault (_ => mutable.HashMap.empty)
-    for ((_, rhs) <- grammar.rules) {
-      rhs.toStream.foreach { decl =>
-        tmp(decl) = reachable(decl, transitionalMap)
-      }
-    }
-    tmp.toMap
-  }
-}
-
-sealed abstract class AbstractUsageCoverage(random: Random, val grammar: GrammarRepr) extends Heuristic with NonTerminalReachabilityInformation {
+sealed abstract class AbstractUsageCoverage(random: Random, val grammar: GrammarRepr) extends NonTerminalReachability(grammar) with Heuristic  {
 
   private def select(q: ListBuffer[Slot]): Int = {
     case class Selection(score: Double, index: Int)
@@ -147,7 +84,7 @@ sealed abstract class AbstractUsageCoverage(random: Random, val grammar: Grammar
     for ((slot@Slot(decl, _, _), i) <- q.zipWithIndex) {
       val reach = reachability(decl)
 
-      val score: Double = if (reach.nonEmpty) reach.map { case (n, s) => computeScore(n, s, slot) }.min else Double.MaxValue
+      val score: Double = if (reach.nonEmpty) reach.map { case (n, s) => computeScore(n.asInstanceOf[Reference].name, s, slot) }.min else Double.MaxValue
 
       if (leastConsideredSelections.isEmpty || score <= leastConsideredSelections.head.score) {
         leastConsideredSelections.prepend(Selection(score, i))
@@ -159,8 +96,6 @@ sealed abstract class AbstractUsageCoverage(random: Random, val grammar: Grammar
     val minScore = leastConsideredSelections.head.score // absolute minimum
     val candidates = leastConsideredSelections.takeWhile(_.score == minScore)
     val candidate = candidates(random.nextInt(candidates.size))
-
-    //    println(s"""${candidate.score}: ${q(candidate.index)} <-- ${leastConsideredSelections.map(t => s"${t.score}: ${q(t.index)}").mkString(", ")}""")
 
     candidate.index
   }
@@ -265,74 +200,7 @@ final class KPathNonTerminalCoverage(k: Int, random: Random, grammar: GrammarRep
 
 /* ************************************************** TERMINAL + NONTERMINAL METRICS ********************************************************* */
 
-// TODO refactor with above into one implementation by extracting a filtering function
-trait ReachabilityInformation {
-  def grammar: GrammarRepr
-
-  protected def computeImmediateSteps(decl: DerivationRule, steps: Int = 0): Map[DerivationRule, Int] = decl match {
-    case ref: Reference => Map(ref -> steps)
-    case Concatenation(elements, _) => elements.flatMap(computeImmediateSteps(_, steps + 1))(collection.breakOut)
-    case Alternation(alternatives, _) => alternatives.flatMap(computeImmediateSteps(_, steps + 1))(collection.breakOut)
-    case Quantification(subject, _, _, _) => computeImmediateSteps(subject, steps + 1)
-    case t: TerminalRule => Map(t -> steps)
-  }
-
-  private def reachable(decl: DerivationRule, transitions: mutable.Map[NonTerminal, Map[DerivationRule, Int]]): mutable.Map[DerivationRule, Int] = {
-    val current = mutable.HashMap[DerivationRule, Int]()
-    val seen = mutable.HashSet[NonTerminal]()
-    // initialize with immediately reachable nonterminals and terminals
-    decl match {
-      case ref@Reference(name, _) =>
-        current ++= transitions(name)
-        current += ref -> 0 // a reference is immediately reachable from itself
-      case t: TerminalRule =>
-        current += t -> 0 // a terminal node is also immediately reachable from itself
-      case _ => current ++= computeImmediateSteps(decl)
-    }
-
-    var distance = 1
-    var newNonTerms = 0
-    do {
-      val unexplored = current.keys.collect { case Reference(name, _) => name }.filterNot(seen).toList
-      val discovery = unexplored.map(transitions).map(_.mapValues(_ + distance))
-      newNonTerms = unexplored.size
-      seen ++= unexplored
-
-      for {
-        discovered <- discovery
-        (d, v) <- discovered
-      } {
-        if (!current.contains(d) || v < current(d)) {
-          current(d) = v
-        }
-      }
-      distance += 1
-
-    } while (newNonTerms > 0)
-
-    current
-  }
-
-  /** Computes for a declaration all reachable terminals and nonterminals and the number of steps needed to reach them. */
-  protected val reachability: Map[DerivationRule, mutable.Map[DerivationRule, Int]] = {
-    // phase 1: compute immediate transition map
-    val transitionalMap = mutable.HashMap[NonTerminal, Map[DerivationRule, Int]]() withDefault (_ => Map.empty)
-    for ((nonTerm, rhs) <- grammar.rules) {
-      transitionalMap(nonTerm) = computeImmediateSteps(rhs)
-    }
-    // phase 2: compute reachability map for all derivation rules
-    val tmp = mutable.HashMap[DerivationRule, mutable.Map[DerivationRule, Int]]() withDefault (_ => mutable.HashMap.empty)
-    for ((_, rhs) <- grammar.rules) {
-      rhs.toStream.foreach { decl =>
-        tmp(decl) = reachable(decl, transitionalMap)
-      }
-    }
-    tmp.toMap
-  }
-}
-
-
-private[tribble] class KPathCoverage(k: Int, random: Random, val grammar: GrammarRepr) extends Heuristic with ReachabilityInformation {
+private[tribble] class KPathCoverage(k: Int, random: Random, val grammar: GrammarRepr) extends Reachability(grammar) with Heuristic {
   require(k > 0, s"k must be positive! ($k given)")
   private val usages = mutable.Map[List[DerivationRule], Int]() withDefaultValue 0
 
@@ -363,10 +231,8 @@ private[tribble] class KPathCoverage(k: Int, random: Random, val grammar: Gramma
 
   override def createdNode(node: DTree): Unit = node.decl match {
     case ref: Reference =>
-      //      println(ref)
       usages(getKTuple(ref, node.parent)) += 1
     case t: TerminalRule =>
-      //      println(t)
       usages(getKTuple(t, node.parent)) += 1
     case _ => // uninteresting
   }
@@ -376,6 +242,8 @@ private[tribble] class KPathCoverage(k: Int, random: Random, val grammar: Gramma
     val leastConsideredSelections = mutable.ListBuffer[Selection]()
 
     for ((slot@Slot(decl, _, _), i) <- q.zipWithIndex) {
+      // the following requires all paths from decl and their associated weights
+      // we only count references as steps towards k but we do count all rules towards the score
       val reach = reachability(decl)
       val score: Double = if (reach.nonEmpty) reach.map { case (n, s) => computeScore(n, s, slot) }.min else Double.MaxValue
       if (leastConsideredSelections.isEmpty || score <= leastConsideredSelections.head.score) {

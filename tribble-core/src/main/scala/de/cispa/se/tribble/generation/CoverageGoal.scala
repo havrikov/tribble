@@ -16,7 +16,7 @@ trait CoverageGoal {
 }
 
 
-class KPathCoverageGoal(k: Int)(implicit val grammar: GrammarRepr, implicit val random: Random) extends ReachabilityInformation with CoverageGoal {
+class KPathCoverageGoal(k: Int)(implicit val grammar: GrammarRepr, implicit val random: Random) extends Reachability(grammar) with CoverageGoal {
   require(k > 0, s"k must be greater than one! ($k given)")
   val name = s"$k-path coverage"
   protected[tribble] val targets: mutable.Set[List[DerivationRule]] = {
@@ -48,18 +48,20 @@ class KPathCoverageGoal(k: Int)(implicit val grammar: GrammarRepr, implicit val 
       target = target.tail
   }
 
+  /** Weight of the shortest path from [[from]] to [[target]] or Int.MaxValue if not reachable. */
   override def cost(from: DerivationRule): Int = target.headOption.fold(Int.MaxValue)(reachability(from).getOrElse(_, Int.MaxValue))
 
   override def targetReached: Boolean = target.isEmpty
 
+  /** Collects possible k-paths starting with the given prefix. */
   private def calcTuples(prefix: List[Reference]): Set[List[DerivationRule]] = {
     require(prefix.nonEmpty)
     if (prefix.size == k) {
       return Set(prefix)
     }
     val start = prefix.head
-    val immediateSteps = computeImmediateSteps(grammar(start)).keys // reachability(grammar(start)).withFilter(_._2 == 0).map(_._1)
-    if (prefix.lengthCompare(k - 1) == 0) { // last element: nonterminals and terminals allowed as last element
+    val immediateSteps = immediateSuccessors(grammar(start))
+    if (prefix.size == k - 1) { // last element: nonterminals and terminals allowed as last element
       immediateSteps.collect { case ref: Reference => ref case t: TerminalRule => t }.map(x => (x :: prefix).reverse).toSet
     } else { // only interested in nonterminals
       immediateSteps.collect { case ref: Reference => ref }.map(_ :: prefix).flatMap(calcTuples).toSet

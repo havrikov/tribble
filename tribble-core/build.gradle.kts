@@ -18,6 +18,7 @@ dependencies {
     implementation("org.scala-lang", "scala-compiler", Versions.scala)
     implementation("dk.brics", "automaton", Versions.automaton)
     implementation("org.apache.commons", "commons-text", Versions.commonsText)
+    implementation("org.jgrapht", "jgrapht-core", Versions.jGraphT)
 
 
     testFixturesApi(project(":tribble-model"))
