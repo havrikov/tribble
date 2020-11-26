@@ -52,7 +52,6 @@ final case class Concatenation(elements: Seq[DerivationRule], override var id: I
 
 @SerialVersionUID(8294090486258532899L)
 final case class Alternation(private val alts: Seq[DerivationRule], override var id: Int = DEFAULT_ID) extends DerivationRule {
-  require(alts.lengthCompare(1) > 0, s"Alternations must contain more than one alternative! (Given $alts)")
   private[tribble] def this(alts: Seq[DerivationRule]) = this(alts, DEFAULT_ID)
   lazy val alternatives: Seq[DerivationRule] = alts.sorted
   override def equals(obj: Any): Boolean = this.canEqual(obj) && alternatives.equals(obj.asInstanceOf[Alternation].alternatives)
