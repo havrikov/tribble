@@ -19,7 +19,7 @@ object DTreeUtils {
     private[tribble] def _toDot(b: StringBuilder): Unit = {
       tree match {
         case DLeaf(_, _, value) =>
-          b.append(s"""{rank = sink; ${System.identityHashCode(this)} [shape=box,label="""")
+          b.append(s"""{rank = sink; ${System.identityHashCode(tree)} [shape=box,label="""")
           escapeDot(value, b)
           b.append("\"];}\n")
         case DNode(decl, _, children) =>
@@ -27,18 +27,18 @@ object DTreeUtils {
             case _: Reference | _: TerminalRule => "style=filled,"
             case _ => ""
           }
-          b.append(s"""${System.identityHashCode(this)} [shape=egg,${style}label="""")
+          b.append(s"""${System.identityHashCode(tree)} [shape=egg,${style}label="""")
           val label = new mutable.StringBuilder()
           escapeDot(decl.toString, label)
           b.append(WordUtils.wrap(label.mkString, 60))
           b.append("\"];\n")
-          children.values.foreach(c => b.append(s"${System.identityHashCode(this)} -- ${System.identityHashCode(c)};\n"))
+          children.values.foreach(c => b.append(s"${System.identityHashCode(tree)} -- ${System.identityHashCode(c)};\n"))
           children.values.foreach(_._toDot(b))
       }
     }
 
     private def escapeDot(s: String, b: StringBuilder): Unit = {
-      b.append(StringEscapeUtils.escapeJson(s))
+      b.append(StringEscapeUtils.escapeHtml4(s))
     }
 
   }
