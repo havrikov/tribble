@@ -40,7 +40,7 @@ final case class Reference(name: String, override var id: Int = DEFAULT_ID) exte
 
 @SerialVersionUID(-2583553144102895239L)
 final case class Concatenation(elements: Seq[DerivationRule], override var id: Int = DEFAULT_ID) extends DerivationRule {
-  require(elements.lengthCompare(1) > 0, s"Concatenations must contain more than one element! (Given $elements)")
+  require(elements.size > 1, s"Concatenations must contain more than one element! (Given $elements)")
   private[tribble] def this(elements: Seq[DerivationRule]) = this(elements, DEFAULT_ID)
   override def toString: String = s"${elements.mkString("(", " ~ ", s")c$id")}${if(probability.isNaN)""else s"@@$probability"}"
   override def toStream: Stream[DerivationRule] = this #:: elements.toStream.flatMap(_.toStream)
