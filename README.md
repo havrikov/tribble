@@ -23,7 +23,7 @@ Let us consider some common use cases for tribble:
 Let us generate 100 JSON files of approximate size 50 (tree nodes) in the directory `json100`.
   
 ```bash
-java -jar tribble.jar generate --mode=50-random-100 --out-dir=json100 --suffix=.json --grammar-file=src/test/resources/json.tribble
+java -jar tribble.jar generate --mode=50-random-100 --out-dir=json100 --suffix=.json --grammar-file=tribble-core/src/test/resources/json.tribble
 ```
 
 ### Controlling the Tree Size
@@ -36,7 +36,7 @@ tribble can generate sets of files with full `k-path` coverage.
 For example to generate a set of Markdown files no deeper than 30 derivations with full `2-path` coverage in the directory `out` (the default value) we would execute the following:
 
 ```bash
-java -jar tribble.jar generate --mode=2-path-30 --suffix=.md --grammar-file=src/test/resources/typesafe/Markdown.scala
+java -jar tribble.jar generate --mode=2-path-30 --suffix=.md --grammar-file=tribble-core/src/test/resources/typesafe/Markdown.scala
 ```  
 
 It is also possible to leave out the depth restriction, in which case `--mode=2-path-30` becomes just `--mode=2-path` and the generated files are minimal in size.
@@ -56,7 +56,7 @@ whether measurements will be done at all.
 Let us generate 100 JSON files while adhering to probabilities annotated in the grammar, while also never generating optional elements below a tree depth of 10.
 
 ```bash
-java -jar tribble.jar generate --mode=10-probabilistic-100 --out-dir=json-prob-100 --suffix=.json --grammar-file=src/test/resources/typesafe/JSON.scala
+java -jar tribble.jar generate --mode=10-probabilistic-100 --out-dir=json-prob-100 --suffix=.json --grammar-file=tribble-core/src/test/resources/typesafe/JSON.scala
 ```  
 
 ### Generating Random Sets According to Inverted Annotated Probabilities
