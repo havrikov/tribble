@@ -85,7 +85,7 @@ import de.cispa.se.tribble.dsl._
 
 Grammar(
   'Grammar := 'Import.? ~ "Grammar" ~ "(" ~ 'Production ~ ("," ~ 'Production).rep ~ ")",
-  'Import de.cispa.se.tribblel._\n",
+  'Import  := "import de.cispa.se.tribble.dsl._\n",
   'Production := 'Reference ~ ":=" ~ 'Alternation,
   'Alternation := 'Concatenation ~ ("|" ~ 'Concatenation).rep,
   'Concatenation := 'Atom.rep(1) ~ ("@@" ~ 'prob).?,
