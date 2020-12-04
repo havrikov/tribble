@@ -1,6 +1,5 @@
-package de.cispa.se.tribble.input
-
-import de.cispa.se.tribble.{DerivationRule, GrammarRepr}
+package de.cispa.se.tribble
+package input
 
 /** Resets the id of all derivation rules to [[DerivationRule.DEFAULT_ID]]. Useful only in testing. */
 private[input] object ResetIds extends AssemblyPhase {
