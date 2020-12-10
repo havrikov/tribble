@@ -21,7 +21,6 @@ dependencies {
     implementation("org.jgrapht", "jgrapht-core", Versions.jGraphT)
 
 
-    testFixturesApi(project(":tribble-model"))
     testFixturesApi("org.scalatest", "scalatest_2.12", Versions.scalatest)
     testImplementation("org.scalatestplus", "scalacheck-1-14_2.12", Versions.scalatestPlus)
     testImplementation("org.scalacheck", "scalacheck_2.12", Versions.scalacheck)
