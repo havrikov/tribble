@@ -21,10 +21,13 @@ sealed trait DTree {
 
   def isRoot: Boolean = parent.isEmpty
 
-  // can be implemented tail-recursively if need be
-  def root: DTree = parent match {
-    case Some(p) => p.root
-    case None => this
+  @tailrec
+  final def root: DTree = {
+    if (parent.isDefined) {
+      this
+    } else {
+      parent.get.asInstanceOf[DTree].root
+    }
   }
 
   def size(): Int = {
