@@ -32,13 +32,18 @@ sealed trait DTree {
 
   def size(): Int = {
     @tailrec
-    def helper(agenda: List[DTree], acc: Int): Int = agenda match {
-      case Nil => acc
-      case (_: DLeaf) :: tl => helper(tl, acc + 1)
-      case DNode(_, _, children) :: tl => helper(children.values.toList ::: tl, acc + 1)
+    def helper(agenda: mutable.ListBuffer[DTree], acc: Int): Int = agenda.length match {
+      case 0 => acc
+      case _ => agenda.remove(0) match {
+        case _: DLeaf =>
+          helper(agenda, acc + 1)
+        case DNode(_, _, children) =>
+          agenda.prependAll(children.valuesIterator)
+          helper(agenda, acc + 1)
+      }
     }
 
-    helper(this :: Nil, 0)
+    helper(mutable.ListBuffer(this), 0)
   }
 
   /** @return the maximal depth of the subtree rooted at this node */
