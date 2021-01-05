@@ -127,7 +127,7 @@ Grammar(
   ,
   'simpleUserType := 'SimpleName ~ ("<" ~ ('optionalProjection ~ 'type | "*") ~ ("," ~ ('optionalProjection ~ 'type | "*")).rep ~ ">").?
   ,
-  'optionalProjection := 'varianceAnnotation
+  'optionalProjection := 'varianceAnnotation  ~ " "
   ,
   'functionType := ('type ~ "").? ~ "(" ~ ('parameter ~ ("," ~ 'parameter).rep).? ~ ")" ~ "->" ~ 'type.?
   ,
@@ -312,9 +312,9 @@ Grammar(
 
   /* Modifiers */
 
-  'modifiers := ('modifier ~ " " | 'annotations).rep
+  'modifiers := (('modifier | 'annotations)  ~ " ").rep
   ,
-  'typeModifiers := ('suspendModifier | 'annotations).rep
+  'typeModifiers := (('suspendModifier | 'annotations)  ~ " ").rep
   ,
   'modifier := 'classModifier
     | 'accessModifier
