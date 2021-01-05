@@ -1,0 +1,408 @@
+// Kotlin grammar from https://kotlinlang.org/docs/reference/grammar.html
+
+/* Syntax */
+
+start = kotlinFile | script;
+
+kotlinFile = preamble topLevelObject* ;
+
+script = preamble expression* ;
+preamble = fileAnnotations? packageHeader? import* ;
+fileAnnotations = fileAnnotation* ;
+fileAnnotation = "@" "file" ":" ("[" unescapedAnnotation+ "]" | unescapedAnnotation) ;
+packageHeader = modifiers "package" SimpleName ("." SimpleName)* SEMI? ;
+
+import = "import" SimpleName ("." SimpleName)* ("." "*" | "as" SimpleName)? SEMI? ;
+
+topLevelObject = class | object | function | property | typeAlias ;
+typeAlias= modifiers "typealias" SimpleName typeParameters? "=" type ;
+
+/* Classes */
+
+class =  modifiers ("class" | "interface") SimpleName
+      typeParameters?
+      primaryConstructor?
+      (":" annotations delegationSpecifier ("," delegationSpecifier)*)?
+      typeConstraints
+      (classBody? | enumClassBody) ;
+primaryConstructor = (modifiers "constructor")? ("(" functionParameter ("," functionParameter)* ")") ;
+classBody = ("{" members "}")? ;
+members = memberDeclaration* ;
+delegationSpecifier = constructorInvocation
+  | userType
+  | explicitDelegation
+  ;
+explicitDelegation = userType "by" expression ;
+typeParameters = "<" typeParameter ("," typeParameter)* ">" ;
+typeParameter = modifiers SimpleName (":" userType)? ;
+
+typeConstraints = ("where" typeConstraint ("," typeConstraint)*)? ;
+typeConstraint = annotations SimpleName ":" type ;
+
+/* Class Members */
+
+memberDeclaration = companionObject
+  | object
+  | function
+  | property
+  | class
+  | typeAlias
+  | anonymousInitializer
+  | secondaryConstructor
+  ;
+anonymousInitializer = "init" block
+  ;
+companionObject = modifiers "companion" "object" SimpleName? (":" delegationSpecifier ("," delegationSpecifier)*)? classBody?
+  ;
+valueParameters = "(" (functionParameter ("," functionParameter)*)? ")"
+  ;
+functionParameter = modifiers ("val" | "var")? parameter ("=" expression)?
+  ;
+block = "{" statements "}"
+  ;
+function = modifiers "fun"
+      typeParameters?
+      (type ".")?
+      SimpleName
+      typeParameters? valueParameters (":" type)?
+      typeConstraints
+      functionBody?
+  ;
+functionBody = block
+  | "=" expression
+  ;
+variableDeclarationEntry = SimpleName (":" type)?
+  ;
+multipleVariableDeclarations = "(" variableDeclarationEntry ("," variableDeclarationEntry)* ")"
+  ;
+property = modifiers ("val" | "var")
+      typeParameters?
+      (type ".")?
+      (multipleVariableDeclarations | variableDeclarationEntry)
+      typeConstraints
+      ("by" | "=" expression SEMI?)?
+      (getter? setter? | setter? getter?) SEMI?
+  ;
+
+getter = modifiers "get"
+  | modifiers "get" "(" ")" (":" type)? functionBody
+  ;
+setter = modifiers "set"
+  | modifiers "set" "(" modifiers (SimpleName | parameter) ")" functionBody
+  ;
+parameter = SimpleName ":" type
+  ;
+object = "object" SimpleName primaryConstructor? (":" delegationSpecifier ("," delegationSpecifier)*)? classBody? ;
+secondaryConstructor = modifiers "constructor" valueParameters (":" constructorDelegationCall)? block
+  ;
+constructorDelegationCall = "this" valueArguments
+  | "super" valueArguments
+  ;
+
+/* Enum Classes */
+
+enumClassBody = "{" enumEntries (";" members)? "}" ;
+enumEntries = (enumEntry ("," enumEntry)* ","? ";"?)? ;
+enumEntry = modifiers SimpleName valueArguments? classBody? ; // fixed error in original grammar which had arguments instead of valueArguments
+
+/* Types */
+
+
+type = typeModifiers typeReference
+  ;
+typeReference = "(" typeReference ")"
+  | functionType
+  | userType
+  | nullableType
+  | "dynamic"
+  ;
+nullableType = typeReference "?"
+  ;
+userType = simpleUserType ("." simpleUserType)*
+  ;
+simpleUserType = SimpleName ("<" (optionalProjection type | "*") ("," (optionalProjection type | "*"))* ">")?
+  ;
+optionalProjection = varianceAnnotation
+  ;
+functionType = (type ".")? "(" (parameter ("," parameter)*)? ")" "->" type?
+  ;
+
+/* Control Structures */
+
+
+controlStructureBody = block
+  | blockLevelExpression
+  ;
+if = "if" "(" expression ")" controlStructureBody SEMI? ("else" controlStructureBody)?
+  ;
+try = "try" block catchBlock* finallyBlock?
+  ;
+catchBlock = "catch" "(" annotations SimpleName ":" userType ")" block
+  ;
+finallyBlock = "finally" block
+  ;
+loop = for
+  | while
+  | doWhile
+  ;
+for = "for" "(" annotations (multipleVariableDeclarations | variableDeclarationEntry) "in" expression ")" controlStructureBody
+  ;
+while = "while" "(" expression ")" controlStructureBody
+  ;
+doWhile = "do" controlStructureBody "while" "(" expression ")"
+  ;
+
+/* Expressions */
+
+/* Rules */
+
+
+expression = disjunction (assignmentOperator disjunction)*
+  ;
+disjunction = conjunction ("||" conjunction)*
+  ;
+conjunction = equalityComparison ("&&" equalityComparison)*
+  ;
+equalityComparison = comparison (equalityOperation comparison)*
+  ;
+comparison = namedInfix (comparisonOperation namedInfix)*
+  ;
+namedInfix = elvisExpression (inOperation elvisExpression)*
+  | elvisExpression (isOperation type)?
+  ;
+elvisExpression = infixFunctionCall ("?:" infixFunctionCall)*
+  ;
+infixFunctionCall = rangeExpression (SimpleName rangeExpression)*
+  ;
+rangeExpression = additiveExpression (".." additiveExpression)*
+  ;
+additiveExpression = multiplicativeExpression (additiveOperation multiplicativeExpression)*
+  ;
+multiplicativeExpression = typeRHS (multiplicativeOperation typeRHS)*
+  ;
+typeRHS = prefixUnaryExpression (typeOperation prefixUnaryExpression)*
+  ;
+prefixUnaryExpression = prefixUnaryOperation* postfixUnaryExpression
+  ;
+postfixUnaryExpression = atomicExpression postfixUnaryOperation*
+  | callableReference postfixUnaryOperation*
+  ;
+callableReference = (userType "?"*)? "::" SimpleName typeArguments?
+  ;
+atomicExpression = "(" expression ")"
+  | literalConstant
+  | functionLiteral
+  | "this" labelReference?
+  | "super" ("<" type ">")? labelReference?
+  | if
+  | when
+  | try
+  | objectLiteral
+  | jump
+  | loop
+  | SimpleName
+  ;
+labelReference = "@" LabelName
+  ;
+labelDefinition = LabelName "@"
+  ;
+literalConstant = "true" | "false"
+  | stringTemplate
+  | NoEscapeString
+  | IntegerLiteral
+  | HexadecimalLiteral
+  | CharacterLiteral
+  | FloatLiteral
+  | "null"
+  ;
+stringTemplate = "\"" stringTemplateElement* "\""
+  ;
+stringTemplateElement = RegularStringPart
+  | ShortTemplateEntryStart (SimpleName | "this")
+  | EscapeSequence
+  | longTemplate
+  ;
+longTemplate = "${" expression "}"
+  ;
+declaration = function
+  | property
+  | class
+  | typeAlias
+  | object
+  ;
+statement = declaration
+  | blockLevelExpression
+  ;
+blockLevelExpression = annotations ("\n")+ expression
+  ;
+multiplicativeOperation = "*" | "/" | "%"
+  ;
+additiveOperation = "+" | "-"
+  ;
+inOperation = "in" | "!in"
+  ;
+typeOperation = "as" | "as?" | ":"
+  ;
+isOperation = "is" | "!is"
+  ;
+comparisonOperation = "<" | ">" | ">=" | "<="
+  ;
+equalityOperation = "!=" | "=="
+  ;
+assignmentOperator = "="
+  | "+=" | "-=" | "*=" | "/=" | "%="
+  ;
+prefixUnaryOperation = "-" | "+"
+  | "++" | "--"
+  | "!"
+  | annotations
+  | labelDefinition
+  ;
+postfixUnaryOperation = "++" | "--" | "!!"
+  | callSuffix
+  | arrayAccess
+  | memberAccessOperation postfixUnaryExpression 
+  ;
+callSuffix = typeArguments? valueArguments annotatedLambda
+  | typeArguments annotatedLambda
+  ;
+annotatedLambda = ("@" unescapedAnnotation)* labelDefinition? functionLiteral ;
+memberAccessOperation = "." | "?." | "?"
+  ;
+typeArguments = "<" type ("," type)* ">"
+  ;
+valueArguments = "(" (SimpleName "=")? "*"? expression ("," expression)* ")"
+  ;
+jump = "throw" expression
+  | "return" labelReference? expression?
+  | "continue" labelReference?
+  | "break" labelReference?
+  ;
+functionLiteral = "{" statements "}"
+  | "{" lambdaParameter ("," lambdaParameter)* "->" statements "}"
+  ;
+lambdaParameter = variableDeclarationEntry
+  | multipleVariableDeclarations (":" type)?
+  ;
+statements = SEMI* statement (SEMI+ statement)* SEMI*
+  ;
+constructorInvocation = userType callSuffix
+  ;
+arrayAccess = "[" expression ("," expression)* "]"
+  ;
+objectLiteral = "object" (":" delegationSpecifier ("," delegationSpecifier)*)? classBody
+  ;
+
+/* When-Expression */
+
+when = "when" ("(" expression ")")? "{"
+        whenEntry*
+    "}"
+  ;
+whenEntry = whenCondition ("," whenCondition)* "->" controlStructureBody SEMI
+  | "else" "->" controlStructureBody SEMI
+  ;
+whenCondition = expression
+  | ("in" | "!in") expression
+  | ("is" | "!is") type
+  ;
+
+/* Modifiers */
+
+modifiers = (modifier | annotations)*
+  ;
+typeModifiers = (suspendModifier | annotations)*
+  ;
+modifier = classModifier
+  | accessModifier
+  | varianceAnnotation
+  | memberModifier
+  | parameterModifier
+  | typeParameterModifier
+  | functionModifier
+  | propertyModifier
+  ;
+classModifier = "abstract"
+  | "final"
+  | "enum"
+  | "open"
+  | "annotation"
+  | "sealed"
+  | "data"
+  ;
+memberModifier = "override"
+  | "open"
+  | "final"
+  | "abstract"
+  | "lateinit"
+  ;
+accessModifier = "private"
+  | "protected"
+  | "public"
+  | "internal"
+  ;
+varianceAnnotation = "in"
+  | "out"
+  ;
+parameterModifier = "noinline"
+  | "crossinline"
+  | "vararg"
+  ;
+typeParameterModifier = "reified"
+  ;
+functionModifier = "tailrec"
+  | "operator"
+  | "infix"
+  | "inline"
+  | "external"
+  | suspendModifier
+  ;
+propertyModifier = "const"
+  ;
+suspendModifier = "suspend"
+  ;
+
+/* Annotations */
+
+annotations = (annotation | annotationList)*
+  ;
+annotation = "@" (annotationUseSiteTarget ":")? unescapedAnnotation
+  ;
+annotationList = "@" (annotationUseSiteTarget ":")? "[" unescapedAnnotation+ "]"
+  ;
+annotationUseSiteTarget = "field"
+  | "file"
+  | "property"
+  | "get"
+  | "set"
+  | "receiver"
+  | "param"
+  | "setparam"
+  | "delegate"
+  ;
+unescapedAnnotation = SimpleName ("." SimpleName)* typeArguments? valueArguments?
+  ;
+
+/* Lexical Structure */
+
+Digit = /[0-9]/;
+IntegerLiteral = Digit | Digit (Digit | "_")* Digit; // fixed the error in the grammar admitting trailing underscores
+FloatLiteral = /[0-9]*(\\.[0-9]+)?([eE][+-]?[0-9]+)?[dD]?/; // partially stolen from json
+
+HexDigit = /[0-9a-fA-F]/;
+HexadecimalLiteral = "0x" (HexDigit | HexDigit (HexDigit | "_")* HexDigit); // fixed the same trailing underscore error
+CharacterLiteral = "'\\u" HexDigit{4} "'"; // xxx might want to rethink this
+
+NoEscapeString = "\"\"\"" /./+ "\"\"\"" ; // <"""-quoted string> // todo fix this
+RegularStringPart = /[^\\n\\r\\\\$\\\"]/ ; // <any character other than backslash, quote, $ or newline>
+ShortTemplateEntryStart = "$";
+EscapeSequence = UnicodeEscapeSequence | RegularEscapeSequence;
+UnicodeEscapeSequence = "\\u" HexDigit{4};
+RegularEscapeSequence = "\\" /[^\n\r]/; // "\" <any character other than newline>
+
+SEMI = ";" | "\r"? "\n";
+SimpleName = javaIdentifier | "`" javaIdentifier "`" ;
+
+LabelName = "@" SimpleName;
+
+javaIdentifier = /[a-zA-Z][0-9a-zA-Z]*/ ;

@@ -1,0 +1,38 @@
+/*
+This grammar describes the regex language understood by tribble.
+It is a modified version of the one used by the automaton library
+http://www.brics.dk/automaton/doc/index.html?dk/brics/automaton/RegExp.html
+*/
+
+regexp  = unionexp;
+unionexp = interexp ( "|" unionexp )?;
+interexp = concatexp ( "&" interexp )?;
+concatexp = repeatexp concatexp?;
+
+repeatexp = repeatexp "?"
+            | repeatexp "*"
+            | repeatexp "+"
+            | repeatexp "{" num "}"
+            | repeatexp "{" num ",}"
+            | repeatexp "{" num "," num "}"
+            | complexp;
+
+complexp = "~" complexp | charclassexp;
+
+charclassexp = "[" charclasses "]"
+               | "[^" charclasses "]"
+               | simpleexp;
+
+charclasses = charclass charclasses?;
+charclass = charexp ("-" charexp)?;
+
+simpleexp = charexp
+            | "." // any single character
+            | "\"" (/[^\\\"\)\(]/|"\\\\"|"\\)"|"\\(")+ "\"" // Unicode string without double-quotes
+            | "()" // the empty string
+            | "(" unionexp ")";
+
+charexp = /[^\"\\\/\(\)]/ // a single non-reserved character
+          | "\\" /[\"\\\/\(\)]/; // a single character
+
+num = /[0-9]+/;

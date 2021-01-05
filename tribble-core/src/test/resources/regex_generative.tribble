@@ -1,0 +1,37 @@
+/*
+This variant of the regex grammar is limited to non-repeating quantifiers and complements.
+*/
+
+regexp  = unionexp;
+unionexp = interexp ( "|" unionexp )?;
+interexp = concatexp ( "&" interexp )?;
+concatexp = repeatexp concatexp?;
+
+repeatexp = complexp "?"
+            | complexp "*"
+            | complexp "+"
+            | complexp "{" num "}"
+            | complexp "{" num ",}"
+            | complexp "{" num "," num2 "}"
+            | complexp;
+
+complexp = "~"? charclassexp;
+
+charclassexp = "[" charclasses "]"
+               | "[^" charclasses "]"
+               | simpleexp;
+
+charclasses = charclass charclasses?;
+charclass = charexp ("-" charexp)?;
+
+simpleexp = charexp
+            | "." // any single character
+            | "\"" (/[^\\\"\)\(]/|"\\\\"|"\\)"|"\\(")+ "\"" // Unicode string without double-quotes
+            | "()" // the empty string
+            | "(" unionexp ")";
+
+charexp = /[^\"\\\/\(\)]/ // a single non-reserved character
+          | "\\" /[\"\\\/\(\)]/; // a single character
+
+num = /[0-9]/;
+num2 = /1[0-9]/;

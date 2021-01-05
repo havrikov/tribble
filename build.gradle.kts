@@ -1,47 +1,68 @@
-group = "saarland.cispa.se"
-version = "0.1"
+import org.jfrog.gradle.plugin.artifactory.dsl.ArtifactoryPluginConvention
+import org.jfrog.gradle.plugin.artifactory.dsl.DoubleDelegateWrapper
+import org.jfrog.gradle.plugin.artifactory.dsl.PublisherConfig
+import org.jfrog.gradle.plugin.artifactory.task.ArtifactoryTask
 
 plugins {
-    scala
-    id("com.github.maiflai.scalatest") version "0.25"
+    base
+    id("com.jfrog.artifactory") version Versions.artifactoryPlugin apply false
 }
 
-repositories {
-    jcenter()
+subprojects {
+    group = "de.cispa.se"
+    apply(plugin = "org.gradle.scala")
+    apply(plugin = "org.gradle.maven-publish")
+    apply(plugin = "com.jfrog.artifactory")
+
+    repositories {
+        jcenter()
+    }
+
+    dependencies{
+        "implementation"("org.scala-lang:scala-library:${Versions.scala}")
+    }
+
+    tasks.withType<ScalaCompile> {
+        scalaCompileOptions.encoding = "UTF-8"
+        scalaCompileOptions.isDeprecation = true
+        scalaCompileOptions.isUnchecked = true
+    }
+
+    the<JavaPluginExtension>().apply {
+        targetCompatibility = JavaVersion.VERSION_1_8
+        withSourcesJar()
+        withJavadocJar()
+    }
+
+    the<ArtifactoryPluginConvention>().apply {
+        setContextUrl(System.getenv("artifactory_context_url"))
+        publish(delegateClosureOf<PublisherConfig> {
+            setPublishIvy(false)
+            repository(delegateClosureOf<DoubleDelegateWrapper> {
+                setProperty("repoKey", "libs-release-local")
+                setProperty("username", System.getenv("artifactory_user"))
+                setProperty("password", System.getenv("artifactory_password"))
+                setProperty("maven", true)
+            })
+            defaults(delegateClosureOf<ArtifactoryTask> {
+                publications("mavenJava")
+            })
+        })
+    }
+
+    tasks.named("artifactoryPublish") {
+        dependsOn("build")
+    }
 }
 
-dependencies {
-    val scalaVersion = "2.12.10"
-    implementation("org.scala-lang", "scala-library", scalaVersion)
-
-    implementation("org.log4s", "log4s_2.12", "1.8.2")
-    runtimeOnly("ch.qos.logback", "logback-classic", "1.2.3")
-
-    compileOnly("org.backuity.clist", "clist-macros_2.12", "3.5.1")
-
-    implementation("com.lihaoyi", "fastparse_2.12", "2.1.3")
-    implementation("org.backuity.clist", "clist-core_2.12", "3.5.1")
-    implementation("org.json4s", "json4s-native_2.12", "3.6.7")
-    implementation("com.github.tototoshi", "scala-csv_2.12", "1.3.6")
-    implementation("com.github.pathikrit", "better-files_2.12", "3.8.0")
-
-    implementation("org.scala-lang", "scala-compiler", scalaVersion)
-    implementation("dk.brics", "automaton", "1.12-1")
-    implementation("org.apache.commons", "commons-text", "1.7")
-
-    testImplementation("org.scalatest", "scalatest_2.12", "3.0.8")
-    testImplementation("org.scalacheck", "scalacheck_2.12", "1.14.0")
-    // needed for the report generation in the scalatest gradle plugin
-    testRuntime("org.pegdown", "pegdown", "1.6.0")
-}
-
-tasks.withType<ScalaCompile> {
-    scalaCompileOptions.encoding = "UTF-8"
-    scalaCompileOptions.isDeprecation = true
-    scalaCompileOptions.isUnchecked = true
-}
-
-tasks.withType<Jar> {
-    manifest.attributes["Main-Class"] = "saarland.cispa.se.tribble.Main"
-    from(configurations.runtimeClasspath.get().map { if (it.isDirectory) it else zipTree(it) })
+// the tribble-tool project will set up its fat jar publishing itself
+configure(subprojects.filter { it.name != "tribble-tool" }) {
+    the<PublishingExtension>().apply {
+        publications {
+            create<MavenPublication>("mavenJava") {
+                from(components["java"])
+                fillPomMetadata()
+            }
+        }
+    }
 }
