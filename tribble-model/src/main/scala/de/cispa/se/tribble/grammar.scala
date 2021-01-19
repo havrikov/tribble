@@ -67,6 +67,7 @@ final case class Alternation(private val alts: Seq[DerivationRule], override var
 final case class Quantification(subject: DerivationRule, min: Int, max: Int, override var id: Int = DEFAULT_ID) extends DerivationRule {
   require(min >= 0, s"Quantifications must have a non-negative minimum! (Given $min)")
   require(max >= min, s"Quantifications must have a valid range! (Given $min to $max)")
+  require(min != 0 || max != 0, "Quantifications must not have both minimum and maximum of zero!")
   private[tribble] def this(subject: DerivationRule, min: Int, max: Int) = this(subject, min, max, DEFAULT_ID)
   override def toStream: Stream[DerivationRule] = this #:: subject.toStream
   override def toString: String = {
