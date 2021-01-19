@@ -70,7 +70,7 @@ class BaseAssembly(productions: Seq[Production]) extends AssemblyPhase {
     val undefined = seen diff g.rules.keySet
     if (undefined.nonEmpty) throw new IllegalArgumentException(raw"Grammar contains undefined symbols: ${undefined.mkString(", ")}")
     // set the right start symbol
-    g.copy(start = unused.head)
+    GrammarRepr(unused.head, g.rules)
   }
 }
 
@@ -182,7 +182,7 @@ object RegexTransformation extends AssemblyPhase {
     // might need to force the view
 
     logger.info(s"Transformed ${transformedAutomata.value} automata into productions.")
-    grammar.copy(rules = updatedProductions.toMap)
+    GrammarRepr(grammar.start, updatedProductions.toMap)
   }
 
 }
@@ -242,7 +242,7 @@ object LiteralMerge extends AssemblyPhase {
       val filtered = mergedProductions.filterKeys(usedReferences)
       removed += mergedProductions.size - filtered.size
       done = filtered == g.rules
-      g = grammar.copy(rules = filtered)
+      g = GrammarRepr(grammar.start, filtered)
     } while (!done)
 
     logger.info(s"Merged ${merges.value} literals${if (removed > 0) s" (and removed $removed productions in the process)" else ""}")

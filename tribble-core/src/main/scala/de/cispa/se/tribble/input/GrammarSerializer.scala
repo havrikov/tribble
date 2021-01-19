@@ -9,7 +9,7 @@ object GrammarSerializer {
   def serializeGrammar(grammar: GrammarRepr, file: File): Unit =
   // make sure we have the fully materialized object here and not just a lazy view
     using(new ObjectOutputStream(file.toScala.newOutputStream())) {
-      _.writeObject(grammar.copy(rules = grammar.rules.view.force))
+      _.writeObject(GrammarRepr(grammar.start, grammar.rules.view.force))
     }
 
   def deserializeGrammar(file: File): GrammarRepr =

@@ -58,7 +58,7 @@ class RuleInlining(private val inlineLevels: Int) extends AssemblyPhase {
     // inline references
     val inlinedRules = grammar.rules.mapValues(inlineRule(_)(grammar)).view.force
     // filter out unused declarations
-    grammar.copy(rules = filterUsedReferences(inlinedRules, grammar.start))
+    GrammarRepr(grammar.start, filterUsedReferences(inlinedRules, grammar.start))
   }
 
   private def inlineRule(rule: DerivationRule)(implicit grammar: GrammarRepr): DerivationRule = rule match {
