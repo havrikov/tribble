@@ -53,11 +53,7 @@ object dsl {
     def rep: Quantification = rep()
 
     /** Mark this rule as repeatable `min` to `max` times (inclusive). */
-    def rep(min: Int = 0, max: Int = Int.MaxValue): Quantification = {
-      require(min >= 0, s"Minimum repetition must be zero or more! ($min given)")
-      require(min <= max, "Minimum repetition must not be greater than maximum!")
-      Quantification(rule, min, max)
-    }
+    def rep(min: Int = 0, max: Int = Int.MaxValue): Quantification = Quantification(rule, min, max)
 
     def @@[T](prob: T)(implicit conv: T => Double): DerivationRule = {
       require(prob >= 0.0d, s"The probability must be positive! ($prob given)")
