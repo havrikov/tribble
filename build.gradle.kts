@@ -9,7 +9,7 @@ plugins {
 }
 
 subprojects {
-    group = "de.cispa.se"
+    group = "de.cispa.se.tribble"
     apply(plugin = "org.gradle.scala")
     apply(plugin = "org.gradle.maven-publish")
     apply(plugin = "com.jfrog.artifactory")
