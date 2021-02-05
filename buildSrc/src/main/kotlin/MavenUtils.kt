@@ -15,5 +15,10 @@ fun MavenPublication.fillPomMetadata() = apply {
                 url.set("https://opensource.org/licenses/MIT")
             }
         }
+        scm {
+            connection.set("scm:git:https://github.com/havrikov/tribble.git")
+            developerConnection.set("scm:git:git@github.com:havrikov/tribble.git")
+            url.set("https://github.com/havrikov/tribble")
+        }
     }
 }
