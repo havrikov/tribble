@@ -62,7 +62,10 @@ class Reachability(private val grammar: GrammarRepr) {
         _reachability(s)(t) = path.getLength
         // if there are no interesting rules between the source and target, the target is immediately reachable
         if (path.getVertexList.asScala.drop(1).reverseIterator.drop(1).forall(!isInteresting(_))) {
-          _immediateSuccessors(s).add(t)
+          // the source and target can be the same unless the path is of length one
+          if (s != t || path.getLength > 1) {
+            _immediateSuccessors(s).add(t)
+          }
         }
       }
     }
