@@ -15,7 +15,7 @@ subprojects {
     apply(plugin = "com.jfrog.artifactory")
 
     repositories {
-        jcenter()
+        mavenCentral()
     }
 
     dependencies{
