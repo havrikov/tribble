@@ -20,11 +20,14 @@ class KPathCoverageGoal(k: Int)(implicit val grammar: GrammarRepr, implicit val 
   require(k > 0, s"k must be greater than one! ($k given)")
   val name = s"$k-path coverage"
   protected[tribble] val targets: mutable.Set[List[DerivationRule]] = {
-    val reachableSymbols = reachability(grammar.root).keys.toSeq
-    if (k == 1)
-      mutable.Set(random.shuffle(reachableSymbols.map(List(_))):_*)
-    else
-      mutable.Set(random.shuffle(reachableSymbols.collect { case ref: Reference => ref :: Nil }.flatMap(calcTuples)): _*)
+    // step 1/2: gather the targets in a deterministic order
+    val linearTargets = if (k == 1) {
+      interestingRules.map(List(_))
+    } else {
+      interestingRules.collect { case ref: Reference => List(ref) }.flatMap(calcTuples)
+    }
+    // step 2/2: shuffle the targets
+    mutable.Set(random.shuffle(linearTargets).toSeq:_*)
   }
   // the target is ordered such that the next rule to be reached is in head position. E.g. root :: child1 :: grandchild3 :: Nil
   protected var target: List[DerivationRule] = grammar.root :: Nil
