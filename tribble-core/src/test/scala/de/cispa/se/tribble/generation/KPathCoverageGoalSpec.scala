@@ -21,4 +21,16 @@ class KPathCoverageGoalSpec extends TestSpecification with SharedModelAssembler 
 
     goal.targets should contain(List('expr/10, 'expr/20, 'expr/20, 'expr/20))
   }
+
+  it should "build recursive loops" in {
+    val g = Grammar(
+      'S := 'A/10,
+      'A := "a" | 'A/42
+    )
+
+    val grammar = modelAssembler.assemble(g.productions)
+    val goal = new KPathCoverageGoal(k = 5)(grammar, new Random(42))
+
+    goal.targets should not be empty
+  }
 }
