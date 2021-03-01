@@ -1,14 +1,13 @@
 package de.cispa.se.tribble
 package generation
 
-import java.util.{Map => JMap, Set => JSet}
-
 import org.jgrapht.Graph
-import org.jgrapht.alg.shortestpath.CHManyToManyShortestPaths
+import org.jgrapht.alg.shortestpath.EppsteinShortestPathIterator
 import org.jgrapht.graph.DefaultEdge
 import org.jgrapht.graph.builder.{GraphBuilder, GraphTypeBuilder}
 import org.jgrapht.util.SupplierUtil
 
+import java.util.{Map => JMap, Set => JSet}
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 
@@ -53,19 +52,20 @@ class Reachability(private val grammar: GrammarRepr) {
     mutable.Map(grammarGraph.vertexSet().asScala.toSeq.map(_ -> new mutable.HashMap[DerivationRule, Int].withDefaultValue(Int.MaxValue)): _*)
 
 
-  private val paths = new CHManyToManyShortestPaths(grammarGraph).getManyToManyPaths(grammarGraph.vertexSet(), getInterestingRules)
-
+  // Populate the reachability and immediate successors by consulting the shortest paths
+  // from all nodes in the graph to all interesting nodes.
   grammarGraph.vertexSet().forEach { s =>
     interestingRules.foreach { t =>
-      val path = paths.getPath(s, t)
+      // We look for two shortest paths and choose the one that has at least one edge
+      // because when source and target are the same, jgrapht tends to report a path
+      // consisting of the node itself disregarding the fact that there is no self-loop.
+      val path = new EppsteinShortestPathIterator(grammarGraph, s, t).asScala.take(2).find(_.getLength > 0).orNull
+
       if (path != null) {
         _reachability(s)(t) = path.getLength
         // if there are no interesting rules between the source and target, the target is immediately reachable
         if (path.getVertexList.asScala.drop(1).reverseIterator.drop(1).forall(!isInteresting(_))) {
-          // the source and target can be the same unless the path consists only of the one node
-          if (s != t || path.getLength > 0) {
-            _immediateSuccessors(s).add(t)
-          }
+          _immediateSuccessors(s).add(t)
         }
       }
     }
