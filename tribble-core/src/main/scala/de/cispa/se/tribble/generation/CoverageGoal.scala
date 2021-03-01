@@ -59,15 +59,15 @@ class KPathCoverageGoal(k: Int)(implicit val grammar: GrammarRepr, implicit val 
   /** Collects possible k-paths starting with the given prefix. */
   private def calcTuples(prefix: List[Reference]): Set[List[DerivationRule]] = {
     require(prefix.nonEmpty)
-    if (prefix.size == k) {
-      return Set(prefix)
-    }
+    require(prefix.size < k)
     val start = prefix.head
     val immediateSteps = immediateSuccessors(start)
-    if (prefix.size == k - 1) { // last element: nonterminals and terminals allowed as last element
-      immediateSteps.collect { case ref: Reference => ref case t: TerminalRule => t }.map(x => (x :: prefix).reverse)
-    } else { // only interested in nonterminals
-      immediateSteps.collect { case ref: Reference => ref }.map(_ :: prefix).flatMap(calcTuples)
+    if (prefix.size == k - 1) {
+      // last element: nonterminals and terminals allowed as last element
+      immediateSteps.collect { case x@(_: Reference | _: TerminalRule) => (x :: prefix).reverse }
+    } else {
+      // only interested in nonterminals
+      immediateSteps.collect { case ref: Reference => ref :: prefix }.flatMap(calcTuples)
     }
   }
 
