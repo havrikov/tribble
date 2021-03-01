@@ -106,6 +106,43 @@ class ModelAssemblerSpec extends TestSpecification with SharedModelAssembler wit
     }
   }
 
+  it should "handle id 0 manually set" in {
+    val g = Grammar(
+      'S := 'A -- 'B -- 'C,
+      'A := "a",
+      'B := "b"/0,
+      'C := "c"
+    )
+
+    val grammar = modelAssembler.assemble(g.productions)
+    val assignedIds = grammar.rules.values.flatMap(_.toStream).map(_.id).toSet
+    assignedIds should contain only(0, 1, 2, 3, 4, 5, 6)
+  }
+
+  it should "handle arbitrarily set ids" in {
+    val g = Grammar(
+      'S := 'A -- 'B/2 -- 'C/7,
+      'A := "a",
+      'B := "b",
+      'C := "c"
+    )
+
+    val grammar = modelAssembler.assemble(g.productions)
+    val assignedIds = grammar.rules.values.flatMap(_.toStream).map(_.id).toSet
+    assignedIds should have size 7
+    assignedIds should contain only(0, 1, 2, 3, 4, 5, 7)
+  }
+
+  it should "detect duplicate manually set ids" in {
+    val g = Grammar(
+      'S := 'A/42 -- 'B/42,
+      'A := "a",
+      'B := "b"
+    )
+
+    an[IllegalArgumentException] should be thrownBy modelAssembler.assemble(g.productions)
+  }
+
   // TODO do something about the fact that the following grammar hangs the process indefinitely
   // Seq('S := 'A, 'A := 'B, 'B := 'A)
 

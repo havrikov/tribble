@@ -190,13 +190,16 @@ object RegexTransformation extends AssemblyPhase {
 /** Assigns unique ids to all derivation rules that have it as [[DerivationRule.DEFAULT_ID]]. */
 object AssignIds extends AssemblyPhase {
   override def process(grammar: GrammarRepr): GrammarRepr = {
-    var nextId = 0
+    // phase 1: scan for rules that already have ids set
+    val seenIds = grammar.rules.values.flatMap(_.toStream).map(_.id).toSet
+
+    // phase 2: assign outstanding ids
+    val availableIds = Iterator.from(0).filterNot(seenIds)
 
     grammar.rules.values.flatMap(_.toStream)
       .filter(_.id == DerivationRule.DEFAULT_ID)
       .foreach { rule =>
-        rule.id = nextId
-        nextId += 1
+        rule.id = availableIds.next()
       }
 
     grammar
