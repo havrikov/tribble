@@ -52,7 +52,11 @@ class KPathCoverageGoal(k: Int)(implicit val grammar: GrammarRepr, implicit val 
   }
 
   /** Weight of the shortest path from [[from]] to [[target]] or Int.MaxValue if not reachable. */
-  override def cost(from: DerivationRule): Int = target.headOption.fold(Int.MaxValue)(reachability(from).getOrElse(_, Int.MaxValue))
+  override def cost(from: DerivationRule): Int = {
+    assert(target.nonEmpty, s"Asking for the cost of deriving $from with no current goal!")
+    val t = target.head
+    if (from == t) 0 else reachability(from).getOrElse(t, Int.MaxValue)
+  }
 
   override def targetReached: Boolean = target.isEmpty
 
