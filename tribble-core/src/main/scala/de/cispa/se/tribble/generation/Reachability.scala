@@ -59,7 +59,7 @@ class Reachability(private val grammar: GrammarRepr) {
       // We look for two shortest paths and choose the one that has at least one edge
       // because when source and target are the same, jgrapht tends to report a path
       // consisting of the node itself disregarding the fact that there is no self-loop.
-      val path = new EppsteinShortestPathIterator(grammarGraph, s, t).asScala.take(2).find(_.getLength > 0).orNull
+      val path = new EppsteinShortestPathIterator(grammarGraph, s, t).asScala.find(_.getLength > 0).orNull
 
       if (path != null) {
         _reachability(s)(t) = path.getLength
