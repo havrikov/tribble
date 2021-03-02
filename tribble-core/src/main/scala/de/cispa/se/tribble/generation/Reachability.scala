@@ -7,7 +7,7 @@ import org.jgrapht.graph.DefaultEdge
 import org.jgrapht.graph.builder.{GraphBuilder, GraphTypeBuilder}
 import org.jgrapht.util.SupplierUtil
 
-import java.util.{Map => JMap, Set => JSet}
+import java.util.{Collections, Map => JMap, Set => JSet}
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 
@@ -43,7 +43,7 @@ class Reachability(grammar: GrammarRepr) {
   val interestingRules: Set[DerivationRule] = grammarGraph.vertexSet().asScala.filter(isInteresting).toSet
 
   /** The set of derivation rules that are of interest to the current metric. */
-  def getInterestingRules: JSet[DerivationRule] = interestingRules.asJava
+  def getInterestingRules: JSet[DerivationRule] = Collections.unmodifiableSet(interestingRules.asJava)
 
   private val _immediateSuccessors: mutable.Map[DerivationRule, mutable.Set[DerivationRule]] =
     mutable.Map(grammarGraph.vertexSet().asScala.toSeq.map(_ -> mutable.Set[DerivationRule]()): _*)
@@ -75,13 +75,17 @@ class Reachability(grammar: GrammarRepr) {
   val reachability: Map[DerivationRule, mutable.Map[DerivationRule, Int]] = _reachability.toMap
 
   /** For all derivation rules, gives which interesting rules are reachable and after how many derivations at the least. */
-  def getReachability: JMap[DerivationRule, JMap[DerivationRule, Int]] = _reachability.mapValues(_.asJava).asJava
+  def getReachability: JMap[DerivationRule, JMap[DerivationRule, Int]] = {
+    Collections.unmodifiableMap(_reachability.mapValues[JMap[DerivationRule, Int]](x => Collections.unmodifiableMap(x.asJava)).asJava)
+  }
 
   /** For all derivation rules, gives which interesting rules are reachable as the next k-path node. */
   val immediateSuccessors: Map[DerivationRule, Set[DerivationRule]] = _immediateSuccessors.mapValues(_.toSet).toMap
 
   /** For all derivation rules, gives which interesting rules are reachable as the next k-path node. */
-  def getImmediateSuccessors: JMap[DerivationRule, JSet[DerivationRule]] = _immediateSuccessors.mapValues(_.asJava).asJava
+  def getImmediateSuccessors: JMap[DerivationRule, JSet[DerivationRule]] = {
+    Collections.unmodifiableMap(_immediateSuccessors.mapValues(x => Collections.unmodifiableSet(x.asJava)).asJava)
+  }
 
   /** Indicates whether to consider this rule as a target for reachability. References and Terminals by default. */
   protected def isInteresting(rule: DerivationRule): Boolean = rule match {
