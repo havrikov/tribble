@@ -35,8 +35,12 @@ private[tribble] class GoalBasedTreeGenerator(closeOffGenerator: TreeGenerator, 
         // problem with left recursion
         // we have to expand the closest-to-target element first!
         val node = DNode(c, parent)
-        val sorted_by_closeness = elements.zipWithIndex.sortBy { case (e, _) => goal.cost(e) }
-        val generated_children = sorted_by_closeness.map { case (e, i) => i -> gen(e, Some(node), currentDepth + 1) }
+        val toExpand = if (goal.targetReached) {
+          elements.zipWithIndex
+        } else {
+          elements.zipWithIndex.sortBy { case (e, _) => goal.cost(e) }
+        }
+        val generated_children = toExpand.map { case (e, i) => i -> gen(e, Some(node), currentDepth + 1) }
         node.children ++= generated_children
         node
       case q@Quantification(subj, min, _, _) =>
