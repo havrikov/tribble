@@ -1,10 +1,9 @@
 package de.cispa.se.tribble
 
-import java.io.File
-
 import com.github.tototoshi.csv.CSVWriter
-import de.cispa.se.tribble.generation.KPathCoverageGoal
+import de.cispa.se.tribble.generation.{KPathCoverageGoal, Reachability}
 
+import java.io.File
 import scala.collection.immutable.TreeMap
 import scala.util.Random
 
@@ -17,7 +16,7 @@ object NopReporter extends TreeReporter {
 }
 
 
-class KPathReporter(coverageReport: File, maxK: Int)(implicit grammar: GrammarRepr, implicit val random: Random) extends TreeReporter {
+class KPathReporter(coverageReport: File, maxK: Int)(implicit grammar: GrammarRepr, random: Random, reachability: Reachability) extends TreeReporter {
   require(maxK > 0, s"MaxK must be positive! ($maxK given)")
   private val goals = TreeMap((1 to maxK).map(x => x -> new KPathCoverageGoal(x)): _*)
   private val targetCounts = goals.mapValues(_.targetCount.toDouble)

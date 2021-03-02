@@ -66,7 +66,7 @@ final class GenerateForestationTask extends Command(name = "forestation", descri
     for ((forest, j) <- forests.zipWithIndex) {
       val dir = Files.createDirectory(outputDir.resolve(f"forest$j%06d"))
       logger.debug(s"Creating forest $j")
-      val reporter = new KPathReporter(Files.createFile(outputDir.resolve(f"forest$j%06d.csv")).toFile, k)(grammar, random)
+      val reporter = new KPathReporter(Files.createFile(outputDir.resolve(f"forest$j%06d.csv")).toFile, k)(grammar, random, reachability)
       for ((tree, i) <- forest.zipWithIndex) {
         reporter.processTree(i + 1, tree)
         val input = tree.leaves.mkString

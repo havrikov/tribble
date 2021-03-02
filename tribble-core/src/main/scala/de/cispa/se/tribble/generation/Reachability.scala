@@ -12,7 +12,7 @@ import scala.collection.JavaConverters._
 import scala.collection.mutable
 
 
-class Reachability(grammar: GrammarRepr) {
+sealed class Reachability(grammar: GrammarRepr) {
   /**
     * This directed unweighted graph represents the derivations of the grammar.
     * The vertices are [[DerivationRule]]s and the edges are possible derivations.

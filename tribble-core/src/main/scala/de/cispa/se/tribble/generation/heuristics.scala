@@ -200,7 +200,7 @@ final class KPathNonTerminalCoverage(k: Int, random: Random, grammar: GrammarRep
 
 /* ************************************************** TERMINAL + NONTERMINAL METRICS ********************************************************* */
 
-private[tribble] class KPathCoverage(k: Int, random: Random, val grammar: GrammarRepr) extends Reachability(grammar) with Heuristic {
+private[tribble] class KPathCoverage(k: Int, random: Random, val grammar: GrammarRepr, private val reach: Reachability) extends Heuristic {
   require(k > 0, s"k must be positive! ($k given)")
   private val usages = mutable.Map[List[DerivationRule], Int]() withDefaultValue 0
 
@@ -244,8 +244,8 @@ private[tribble] class KPathCoverage(k: Int, random: Random, val grammar: Gramma
     for ((slot@Slot(decl, _, _), i) <- q.zipWithIndex) {
       // the following requires all paths from decl and their associated weights
       // we only count references as steps towards k but we do count all rules towards the score
-      val reach = reachability(decl)
-      val score: Double = if (reach.nonEmpty) reach.map { case (n, s) => computeScore(n, s, slot) }.min else Double.MaxValue
+      val declReach = reach.reachability(decl)
+      val score: Double = if (declReach.nonEmpty) declReach.map { case (n, s) => computeScore(n, s, slot) }.min else Double.MaxValue
       if (leastConsideredSelections.isEmpty || score <= leastConsideredSelections.head.score) {
         leastConsideredSelections.prepend(Selection(score, i))
       }

@@ -16,15 +16,15 @@ trait CoverageGoal {
 }
 
 
-class KPathCoverageGoal(k: Int)(implicit val grammar: GrammarRepr, implicit val random: Random) extends Reachability(grammar) with CoverageGoal {
+class KPathCoverageGoal(k: Int)(implicit grammar: GrammarRepr, random: Random, reach: Reachability) extends CoverageGoal {
   require(k > 0, s"k must be greater than one! ($k given)")
   val name = s"$k-path coverage"
   protected[tribble] val targets: mutable.Set[List[DerivationRule]] = {
     // step 1/2: gather the targets in a deterministic order
     val linearTargets = if (k == 1) {
-      interestingRules.map(List(_))
+      reach.interestingRules.map(List(_))
     } else {
-      interestingRules.collect { case ref: Reference => List(ref) }.flatMap(calcTuples)
+      reach.interestingRules.collect { case ref: Reference => List(ref) }.flatMap(calcTuples)
     }
     // step 2/2: shuffle the targets
     mutable.Set(random.shuffle(linearTargets).toSeq:_*)
@@ -55,7 +55,7 @@ class KPathCoverageGoal(k: Int)(implicit val grammar: GrammarRepr, implicit val 
   override def cost(from: DerivationRule): Int = {
     assert(target.nonEmpty, s"Asking for the cost of deriving $from with no current goal!")
     val t = target.head
-    if (from == t) 0 else reachability(from).getOrElse(t, Int.MaxValue)
+    if (from == t) 0 else reach.reachability(from).getOrElse(t, Int.MaxValue)
   }
 
   override def targetReached: Boolean = target.isEmpty
@@ -65,7 +65,7 @@ class KPathCoverageGoal(k: Int)(implicit val grammar: GrammarRepr, implicit val 
     require(prefix.nonEmpty)
     require(prefix.size < k)
     val start = prefix.head
-    val immediateSteps = immediateSuccessors(start)
+    val immediateSteps = reach.immediateSuccessors(start)
     if (prefix.size == k - 1) {
       // last element: nonterminals and terminals allowed as last element
       immediateSteps.collect { case x@(_: Reference | _: TerminalRule) => (x :: prefix).reverse }
@@ -98,7 +98,7 @@ class KPathCoverageGoal(k: Int)(implicit val grammar: GrammarRepr, implicit val 
 
 }
 
-class RecurrentKPathCoverageGoal(k: Int)(implicit override val grammar: GrammarRepr, random: Random) extends KPathCoverageGoal(k) {
+class RecurrentKPathCoverageGoal(k: Int)(implicit grammar: GrammarRepr, random: Random, reach: Reachability) extends KPathCoverageGoal(k) {
   // backup of original targets
   private val targetPool = targets.toList
 
@@ -106,7 +106,6 @@ class RecurrentKPathCoverageGoal(k: Int)(implicit override val grammar: GrammarR
   override val targetCount: Int = Int.MaxValue
 
   override def usedDerivation(rule: DerivationRule, parent: Option[DNode]): Unit = {
-
     val tuple = getTupleEndingIn(rule, parent)
     targets -= tuple
     // difference from superclass: refill targets
@@ -117,7 +116,7 @@ class RecurrentKPathCoverageGoal(k: Int)(implicit override val grammar: GrammarR
   }
 }
 
-class PowerSetCoverageGoals(k: Int, p: Int)(implicit val grammar: GrammarRepr, implicit val random: Random) {
+class PowerSetCoverageGoals(k: Int, p: Int)(implicit grammar: GrammarRepr, random: Random, reach: Reachability) {
   require(p >= 1, s"p must be >= 1 ($p given)")
   private val original = new KPathCoverageGoal(k)
 

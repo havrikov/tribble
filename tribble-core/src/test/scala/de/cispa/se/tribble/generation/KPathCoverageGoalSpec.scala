@@ -17,7 +17,7 @@ class KPathCoverageGoalSpec extends TestSpecification with SharedModelAssembler 
     val grammar = modelAssembler.assemble(g.productions)
     val random = new Random(42)
 
-    val goal = new KPathCoverageGoal(k = 4)(grammar, random)
+    val goal = new KPathCoverageGoal(k = 4)(grammar, random, new Reachability(grammar))
 
     goal.targets should contain(List('expr/10, 'expr/20, 'expr/20, 'expr/20))
   }
@@ -29,7 +29,7 @@ class KPathCoverageGoalSpec extends TestSpecification with SharedModelAssembler 
     )
 
     val grammar = modelAssembler.assemble(g.productions)
-    val goal = new KPathCoverageGoal(k = 5)(grammar, new Random(42))
+    val goal = new KPathCoverageGoal(k = 5)(grammar, new Random(42), new Reachability(grammar))
 
     goal.targets should not be empty
   }

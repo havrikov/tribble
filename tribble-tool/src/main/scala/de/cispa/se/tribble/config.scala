@@ -66,6 +66,7 @@ trait GrammarModule { self: Command =>
   lazy val grammarLoader: GrammarLoader = new GrammarLoader(loadingStrategyImpl, grammarCache)
   var grammarFile: File = arg[File](description = "Path to the grammar file")
   lazy val grammar: GrammarRepr = grammarLoader.loadGrammar(grammarFile)
+  lazy val reachability: Reachability = new Reachability(grammar)
 }
 
 trait ConstraintModule { self: Command =>
@@ -74,6 +75,7 @@ trait ConstraintModule { self: Command =>
 
 trait HeuristicModule { self: Command =>
   def random: Random
+  def reachability: Reachability
   def grammar: GrammarRepr
 
   private val nWindowPairNonTermPattern = """(\d+)-window-pair-non-terminal-coverage""".r
@@ -87,13 +89,14 @@ trait HeuristicModule { self: Command =>
     case "non-terminal-coverage" => new NonTerminalCoverage(random, grammar)
     case nWindowPairNonTermPattern(n) => new NWindowPairNonTerminalCoverage(n.toInt, random, grammar)
     case kPathNonTermPattern(k) => new KPathNonTerminalCoverage(k.toInt, random, grammar)
-    case kPathPattern(k) => new KPathCoverage(k.toInt, random, grammar)
+    case kPathPattern(k) => new KPathCoverage(k.toInt, random, grammar, reachability)
     case _ => throw new IllegalArgumentException(s"Unknown heuristic $heuristic")
   }
 }
 
 trait ForestationGenerationModule { self: Command =>
   implicit def grammar: GrammarRepr
+  implicit def reachability: Reachability
   implicit def random: Random
   def regexGenerator: RegexGenerator
   def heuristicImpl: Heuristic
@@ -119,6 +122,7 @@ trait CloseOffControlModule {self: Command =>
 
 trait ForestGeneratorModule { self: Command =>
   implicit def grammar: GrammarRepr
+  implicit def reachability: Reachability
   implicit def random: Random
   def regexGenerator: RegexGenerator
   def heuristicImpl: Heuristic
@@ -173,6 +177,7 @@ trait OutputModule { self: Command =>
 
 trait ReportingModule { self: Command =>
   implicit def grammar: GrammarRepr
+  implicit def reachability: Reachability
   implicit def random: Random
   var reportKCoverage: Int = opt[Int](description = "Up to which k to report the k-path coverage. Only effective when report-file is set. Default 4", default = 4)
   var reportFile: Option[File] = opt[Option[File]](description = "Where to log the k-path coverage")
