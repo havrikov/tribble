@@ -61,7 +61,7 @@ class BaseAssembly(productions: Seq[Production]) extends AssemblyPhase {
     for (production@(lhs, rhs) <- productions) {
       if (g.rules.contains(lhs)) throw new IllegalArgumentException(s"Cannot have multiple declarations for $lhs!")
       g = g.copy(rules = g.rules + production)
-      seen ++= rhs.toStream.flatMap { case Reference(n, _) => Some(n) case _ => None } // keep track of references
+      seen ++= rhs.toStream.collect({ case Reference(name, _) => name })  // keep track of references
     }
 
     // check result
