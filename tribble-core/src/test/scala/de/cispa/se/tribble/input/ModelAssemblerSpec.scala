@@ -117,11 +117,12 @@ class ModelAssemblerSpec extends TestSpecification with SharedModelAssembler wit
     val grammar = modelAssembler.assemble(g.productions)
     val assignedIds = grammar.rules.values.flatMap(_.toStream).map(_.id).toSet
     assignedIds should contain only(0, 1, 2, 3, 4, 5, 6)
+    grammar("B").id shouldEqual 0
   }
 
   it should "handle arbitrarily set ids" in {
     val g = Grammar(
-      'S := 'A -- 'B/2 -- 'C/7,
+      'S := 'A/5 -- 'B/2 -- 'C/7,
       'A := "a",
       'B := "b",
       'C := "c"
@@ -131,6 +132,7 @@ class ModelAssemblerSpec extends TestSpecification with SharedModelAssembler wit
     val assignedIds = grammar.rules.values.flatMap(_.toStream).map(_.id).toSet
     assignedIds should have size 7
     assignedIds should contain only(0, 1, 2, 3, 4, 5, 7)
+    grammar.root.children.map(_.id).toList should contain inOrderOnly(5, 2, 7)
   }
 
   it should "detect duplicate manually set ids" in {
