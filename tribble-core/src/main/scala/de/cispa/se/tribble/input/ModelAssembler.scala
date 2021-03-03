@@ -54,9 +54,9 @@ trait AssemblyPhase {
 }
 
 class BaseAssembly(productions: Seq[Production]) extends AssemblyPhase {
-  val seen = new mutable.HashSet[NonTerminal]
 
   override def process(grammar: GrammarRepr): GrammarRepr = {
+    val seen = new mutable.HashSet[NonTerminal]
     var g = grammar
     for (production@(lhs, rhs) <- productions) {
       if (g.rules.contains(lhs)) throw new IllegalArgumentException(s"Cannot have multiple declarations for $lhs!")
