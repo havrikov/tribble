@@ -17,27 +17,7 @@ sealed class Reachability(grammar: GrammarRepr) {
     * This directed unweighted graph represents the derivations of the grammar.
     * The vertices are [[DerivationRule]]s and the edges are possible derivations.
     */
-  val grammarGraph: Graph[DerivationRule, DefaultEdge] = {
-    val emptyGraph: Graph[DerivationRule, DefaultEdge] = GraphTypeBuilder
-      .directed()
-      .weighted(true)
-      .allowingMultipleEdges(false)
-      .allowingSelfLoops(false)
-      .edgeSupplier(SupplierUtil.DEFAULT_EDGE_SUPPLIER)
-      .buildGraph()
-
-    val builder: GraphBuilder[DerivationRule, DefaultEdge, Graph[DerivationRule, DefaultEdge]] = new GraphBuilder(emptyGraph)
-
-    grammar.rules.values.flatMap(_.toStream).foreach {
-      case ref: Reference => builder.addEdge(ref, grammar(ref))
-      case c: Concatenation => c.elements.foreach(builder.addEdge(c, _))
-      case a: Alternation => a.alternatives.foreach(builder.addEdge(a, _))
-      case q: Quantification => builder.addEdge(q, q.subject)
-      case _: TerminalRule =>
-    }
-
-    builder.buildAsUnmodifiable()
-  }
+  val grammarGraph: Graph[DerivationRule, DefaultEdge] = Reachability.constructGraph(grammar)
 
   /** The set of derivation rules that are of interest to the current metric. */
   val interestingRules: Set[DerivationRule] = grammarGraph.vertexSet().asScala.filter(isInteresting).toSet
@@ -92,6 +72,30 @@ sealed class Reachability(grammar: GrammarRepr) {
     case _: Reference => true
     case _: TerminalRule => true
     case _ => false
+  }
+}
+
+object Reachability {
+  private[tribble] def constructGraph(g: GrammarRepr): Graph[DerivationRule, DefaultEdge] = {
+    val emptyGraph: Graph[DerivationRule, DefaultEdge] = GraphTypeBuilder
+      .directed()
+      .weighted(true)
+      .allowingMultipleEdges(false)
+      .allowingSelfLoops(false)
+      .edgeSupplier(SupplierUtil.DEFAULT_EDGE_SUPPLIER)
+      .buildGraph()
+
+    val builder: GraphBuilder[DerivationRule, DefaultEdge, Graph[DerivationRule, DefaultEdge]] = new GraphBuilder(emptyGraph)
+
+    g.rules.values.flatMap(_.toStream).foreach {
+      case ref: Reference => builder.addEdge(ref, g(ref))
+      case c: Concatenation => c.elements.foreach(builder.addEdge(c, _))
+      case a: Alternation => a.alternatives.foreach(builder.addEdge(a, _))
+      case q: Quantification => builder.addEdge(q, q.subject)
+      case _: TerminalRule =>
+    }
+
+    builder.buildAsUnmodifiable()
   }
 }
 
