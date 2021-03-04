@@ -1,11 +1,13 @@
 package de.cispa.se.tribble
 package input
 
-import java.util.StringJoiner
-
+import de.cispa.se.tribble.generation.Reachability
 import de.cispa.se.tribble.model.AutomatonTransformer
+import org.jgrapht.alg.connectivity.ConnectivityInspector
 import org.log4s.getLogger
 
+import java.util.StringJoiner
+import scala.collection.JavaConverters._
 import scala.collection.mutable
 
 private[tribble] class ModelAssembler(
@@ -55,23 +57,52 @@ trait AssemblyPhase {
 
 class BaseAssembly(productions: Seq[Production]) extends AssemblyPhase {
 
+  /** Throw if there are rules in the grammar that are not reachable from the root. */
+  private def ensureConnected(grammar: GrammarRepr): Unit = {
+    // There is an edge case where the root symbol is terminal.
+    // In this case we forbid the grammar having any other rules.
+    val root = grammar.root
+    if (root.isInstanceOf[TerminalRule]) {
+      if (grammar.rules.size == 1) {
+        return
+      } else {
+        throw new IllegalArgumentException("When the root of the grammar is a terminal symbol, it is not allowed to have other productions!")
+      }
+    }
+
+    val graph = Reachability.constructGraph(grammar)
+    val allNodes = graph.vertexSet().asScala
+    val inspector = new ConnectivityInspector(graph)
+    val rootReach = inspector.connectedSetOf(root).asScala
+    if (rootReach.size < allNodes.size) {
+      val unreachable = allNodes diff rootReach
+      throw new IllegalArgumentException(s"Grammar contains symbols unreachable from the root ${grammar.start}: ${unreachable.mkString(", ")}")
+    }
+  }
+
   override def process(grammar: GrammarRepr): GrammarRepr = {
-    val seen = new mutable.HashSet[NonTerminal]
+    val used = new mutable.HashSet[NonTerminal]
     var g = grammar
     for (production@(lhs, rhs) <- productions) {
       if (g.rules.contains(lhs)) throw new IllegalArgumentException(s"Cannot have multiple declarations for $lhs!")
       g = g.copy(rules = g.rules + production)
-      seen ++= rhs.toStream.collect({ case Reference(name, _) => name })  // keep track of references
+      // We want to keep track of non-terminals that are used in the grammar
+      // to find the one that is unused and will be treated as the root.
+      // We also want to detect the case where several rules refer to each other but none is reachable from the true root.
+      // However, this requires us to have built up a graph representation already, so this check occurs later in a "connectedness" check.
+      used ++= rhs.toStream.collect({ case Reference(name, _) => name })
     }
 
-    // check result
-    val unused = g.rules.keySet diff seen
+    val unused = g.rules.keySet diff used
     if (unused.isEmpty) throw new IllegalArgumentException("Grammar contains no root symbol!")
     if (unused.size > 1) throw new IllegalArgumentException(raw"Grammar contains multiple root symbols: ${unused.mkString(", ")}")
-    val undefined = seen diff g.rules.keySet
+    val undefined = used diff g.rules.keySet
     if (undefined.nonEmpty) throw new IllegalArgumentException(raw"Grammar contains undefined symbols: ${undefined.mkString(", ")}")
     // set the right start symbol
-    GrammarRepr(unused.head, g.rules)
+    val grammarRepr = GrammarRepr(unused.head, g.rules)
+    // perform the "connectedness" check
+    ensureConnected(grammarRepr)
+    grammarRepr
   }
 }
 

@@ -138,12 +138,11 @@ Hex4Digits = HexDigit{4};
 RegularExpressionLiteral = "/" Pattern "/" RegularExpressionFlags ;
 // RegularExpressionLiteral = "/" RegularExpressionBody "/" RegularExpressionFlags ; // xxx was this
 //RegularExpressionBody = RegularExpressionFirstChar RegularExpressionChars ;
-RegularExpressionChars = "" /*[empty]*/ | RegularExpressionChars RegularExpressionChar ;
 /*
+RegularExpressionChars = "" /*[empty]*/ | RegularExpressionChars RegularExpressionChar ;
 RegularExpressionFirstChar = /~(
                               |
                               | | |*|\\|\/|])/ | RegularExpressionBackslashSequence | RegularExpressionClass ;
-*/
 RegularExpressionChar = /~(
                          |
                          | | |\\|\/|])/ | RegularExpressionBackslashSequence | RegularExpressionClass ;
@@ -156,6 +155,7 @@ RegularExpressionClassChars = "" /*[empty]*/ | RegularExpressionClassChars Regul
 RegularExpressionClassChar = /~(
                               |
                               | | |]|\\\\)/ | RegularExpressionBackslashSequence ;
+*/
 RegularExpressionFlags = "" /*[empty]*/ | RegularExpressionFlags IdentifierPart ;
 
 //Template = NoSubstitutionTemplate | TemplateHead ;

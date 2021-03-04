@@ -145,6 +145,33 @@ class ModelAssemblerSpec extends TestSpecification with SharedModelAssembler wit
     an[IllegalArgumentException] should be thrownBy modelAssembler.assemble(g.productions)
   }
 
+  it should "detect a terminal root symbol" in {
+    val g = Grammar(
+      'S := "s",
+
+      'A := 'B.rep,
+      'B := "b" ~ 'C,
+      'C := 'A | "c"
+    )
+
+    val iae = the[IllegalArgumentException] thrownBy modelAssembler.assemble(g.productions)
+    iae.getMessage shouldEqual "When the root of the grammar is a terminal symbol, it is not allowed to have other productions!"
+  }
+
+  it should "detect unconnected cross-referencing self loops" in {
+    val g = Grammar(
+      'S := 'X | 'Y,
+      'X := "x",
+      'Y := "y",
+
+      'A := "a" | 'B,
+      'B := "b" | 'A
+    )
+
+    val iae = the[IllegalArgumentException] thrownBy modelAssembler.assemble(g.productions)
+    iae.getMessage should startWith("Grammar contains symbols unreachable from the root")
+  }
+
   // TODO do something about the fact that the following grammar hangs the process indefinitely
   // Seq('S := 'A, 'A := 'B, 'B := 'A)
 
