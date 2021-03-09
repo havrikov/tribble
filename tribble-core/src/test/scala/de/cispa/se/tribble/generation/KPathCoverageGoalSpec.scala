@@ -33,4 +33,18 @@ class KPathCoverageGoalSpec extends TestSpecification with SharedModelAssembler 
 
     goal.targets should not be empty
   }
+
+  it should "include the root as a 1-path target if it is a reference" in {
+    val g = Grammar(
+      'S := 'A/1,
+      'A := "a"/2
+    )
+
+    val grammar = modelAssembler.assemble(g.productions)
+    val reach = new Reachability(grammar)
+    val goal = new KPathCoverageGoal(k = 1)(grammar, new Random(42), reach)
+
+    reach.interestingRules should contain theSameElementsAs Set('A/1, "a"/2)
+    goal.targets should contain theSameElementsAs Set(List('A/1), List("a"/2))
+  }
 }
