@@ -19,11 +19,7 @@ sealed class Reachability(grammar: GrammarRepr) {
     */
   val grammarGraph: Graph[DerivationRule, DefaultEdge] = Reachability.constructGraph(grammar)
 
-  /** The set of derivation rules that are of interest to the current metric. */
-  val interestingRules: Set[DerivationRule] = grammarGraph.vertexSet().asScala.filter(isInteresting).toSet
-
-  /** The set of derivation rules that are of interest to the current metric. */
-  def getInterestingRules: JSet[DerivationRule] = Collections.unmodifiableSet(interestingRules.asJava)
+  private val _interestingRules: mutable.Set[DerivationRule] = mutable.HashSet.empty
 
   private val _immediateSuccessors: mutable.Map[DerivationRule, mutable.Set[DerivationRule]] =
     mutable.Map(grammarGraph.vertexSet().asScala.toSeq.map(_ -> mutable.Set[DerivationRule]()): _*)
@@ -31,13 +27,14 @@ sealed class Reachability(grammar: GrammarRepr) {
   private val _reachability: mutable.Map[DerivationRule, mutable.Map[DerivationRule, Int]] =
     mutable.Map(grammarGraph.vertexSet().asScala.toSeq.map(_ -> new mutable.HashMap[DerivationRule, Int].withDefaultValue(Int.MaxValue)): _*)
 
-
-  private val paths = new CHManyToManyShortestPaths(grammarGraph).getManyToManyPaths(grammarGraph.vertexSet(), getInterestingRules)
+  // gather interesting rules that are not guaranteed to be reachable from the root
+  private val preliminaryTargets = grammarGraph.vertexSet().asScala.filter(isInteresting).toSet
+  private val paths = new CHManyToManyShortestPaths(grammarGraph).getManyToManyPaths(grammarGraph.vertexSet(), preliminaryTargets.asJava)
 
   // Populate the reachability and immediate successors by consulting the shortest paths
   // from all nodes in the graph to all interesting nodes.
   grammarGraph.vertexSet().forEach { s =>
-    interestingRules.foreach { t =>
+    preliminaryTargets.foreach { t =>
       // There is an edge case if s == t.
       // In this case we must not use the shortest path as given by the CHManyToManyShortestPaths algorithm
       // because it simply reports a path consisting of the one node.
@@ -57,6 +54,21 @@ sealed class Reachability(grammar: GrammarRepr) {
       }
     }
   }
+
+  // Everything that is reachable from the root is interesting
+  _reachability(grammar.root).keys.foreach(_interestingRules.add)
+
+  // Edge case: the root is not reachable from itself by construction,
+  // however, it should still count as an interesting rule if it is a Reference.
+  if (grammar.root.isInstanceOf[Reference]) {
+    _interestingRules.add(grammar.root)
+  }
+
+  /** The set of derivation rules that are of interest to the current metric. */
+  val interestingRules: Set[DerivationRule] = _interestingRules.toSet
+
+  /** The set of derivation rules that are of interest to the current metric. */
+  def getInterestingRules: JSet[DerivationRule] = Collections.unmodifiableSet(_interestingRules.asJava)
 
   /** For all derivation rules, gives which interesting rules are reachable and after how many derivations at the least. */
   val reachability: Map[DerivationRule, mutable.Map[DerivationRule, Int]] = _reachability.toMap
