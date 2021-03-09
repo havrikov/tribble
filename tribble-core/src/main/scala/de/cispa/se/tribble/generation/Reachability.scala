@@ -2,7 +2,7 @@ package de.cispa.se.tribble
 package generation
 
 import org.jgrapht.Graph
-import org.jgrapht.alg.shortestpath.EppsteinShortestPathIterator
+import org.jgrapht.alg.shortestpath.{CHManyToManyShortestPaths, EppsteinShortestPathIterator}
 import org.jgrapht.graph.DefaultEdge
 import org.jgrapht.graph.builder.{GraphBuilder, GraphTypeBuilder}
 import org.jgrapht.util.SupplierUtil
@@ -32,14 +32,21 @@ sealed class Reachability(grammar: GrammarRepr) {
     mutable.Map(grammarGraph.vertexSet().asScala.toSeq.map(_ -> new mutable.HashMap[DerivationRule, Int].withDefaultValue(Int.MaxValue)): _*)
 
 
+  private val paths = new CHManyToManyShortestPaths(grammarGraph).getManyToManyPaths(grammarGraph.vertexSet(), getInterestingRules)
+
   // Populate the reachability and immediate successors by consulting the shortest paths
   // from all nodes in the graph to all interesting nodes.
   grammarGraph.vertexSet().forEach { s =>
     interestingRules.foreach { t =>
-      // We look for two shortest paths and choose the one that has at least one edge
-      // because when source and target are the same, jgrapht tends to report a path
-      // consisting of the node itself disregarding the fact that there is no self-loop.
-      val path = new EppsteinShortestPathIterator(grammarGraph, s, t).asScala.find(_.getLength > 0).orNull
+      // There is an edge case if s == t.
+      // In this case we must not use the shortest path as given by the CHManyToManyShortestPaths algorithm
+      // because it simply reports a path consisting of the one node.
+      // Instead we use the EppsteinShortestPathIterator and choose a path that has at least one edge.
+      val path = if (s == t) {
+        new EppsteinShortestPathIterator(grammarGraph, s, t).asScala.find(_.getLength > 0).orNull
+      } else {
+        paths.getPath(s, t)
+      }
 
       if (path != null) {
         _reachability(s)(t) = path.getLength
