@@ -19,8 +19,6 @@ sealed class Reachability(grammar: GrammarRepr) {
     */
   val grammarGraph: Graph[DerivationRule, DefaultEdge] = Reachability.constructGraph(grammar)
 
-  private val _interestingRules: mutable.Set[DerivationRule] = mutable.HashSet.empty
-
   private val _immediateSuccessors: mutable.Map[DerivationRule, mutable.Set[DerivationRule]] =
     mutable.Map(grammarGraph.vertexSet().asScala.toSeq.map(_ -> mutable.Set[DerivationRule]()): _*)
 
@@ -55,20 +53,17 @@ sealed class Reachability(grammar: GrammarRepr) {
     }
   }
 
-  // Everything that is reachable from the root is interesting
-  _reachability(grammar.root).keys.foreach(_interestingRules.add)
-
-  // Edge case: the root is not reachable from itself by construction,
-  // however, it should still count as an interesting rule if it is a Reference.
-  if (grammar.root.isInstanceOf[Reference]) {
-    _interestingRules.add(grammar.root)
-  }
+  /** The set of derivation rules that are of interest to the current metric. */
+  val interestingRules: Set[DerivationRule] = _reachability(grammar.root).keySet.toSet ++ (if (grammar.root.isInstanceOf[Reference]) {
+    // Edge case: the root is not reachable from itself by construction,
+    // however, it should still count as an interesting rule if it is a Reference.
+    Set(grammar.root)
+  } else {
+    Set()
+  })
 
   /** The set of derivation rules that are of interest to the current metric. */
-  val interestingRules: Set[DerivationRule] = _interestingRules.toSet
-
-  /** The set of derivation rules that are of interest to the current metric. */
-  def getInterestingRules: JSet[DerivationRule] = Collections.unmodifiableSet(_interestingRules.asJava)
+  def getInterestingRules: JSet[DerivationRule] = Collections.unmodifiableSet(interestingRules.asJava)
 
   /** For all derivation rules, gives which interesting rules are reachable and after how many derivations at the least. */
   val reachability: Map[DerivationRule, mutable.Map[DerivationRule, Int]] = _reachability.toMap
