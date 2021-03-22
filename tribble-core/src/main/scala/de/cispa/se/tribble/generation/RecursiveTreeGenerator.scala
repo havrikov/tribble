@@ -1,6 +1,5 @@
-package de.cispa.se.tribble.generation
-
-import de.cispa.se.tribble.{Alternation, Concatenation, DLeaf, DNode, DTree, DerivationRule, GrammarRepr, Literal, Quantification, Reference, Regex}
+package de.cispa.se.tribble
+package generation
 
 abstract class RecursiveTreeGenerator(protected val regexGenerator: RegexGenerator) extends TreeGenerator {
 
