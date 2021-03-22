@@ -11,7 +11,7 @@ trait ForestGenerator {
 }
 
 class ForestAdapter(treeGenerator: TreeGenerator, n: Int)(implicit grammar: GrammarRepr) extends ForestGenerator {
-  override def generateForest(): Iterable[DTree] = (1 to n).view.map(_ => treeGenerator.generate)
+  override def generateForest(): Stream[DTree] = Stream.continually(treeGenerator.generate).take(n)
 }
 
 class ForestSizeLimiter(generator: ForestGenerator, n: Int) extends ForestGenerator {
