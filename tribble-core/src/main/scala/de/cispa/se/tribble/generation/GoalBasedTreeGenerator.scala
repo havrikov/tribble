@@ -22,7 +22,7 @@ private[tribble] class GoalBasedTreeGenerator(closeOffGenerator: TreeGenerator, 
           node
         } else {
           // if we already reached the target, close off the tree
-          val node = closeOffGenerator.gen(a, parent, currentDepth + 1)
+          val node = closeOffGenerator.gen(a, parent, currentDepth)
           // because we do not return to this method recursively when closing off the tree, we have to update the goal post-factum
           // the node itself, however, has already been reported to the goal at the beginning of this method
           node match {
