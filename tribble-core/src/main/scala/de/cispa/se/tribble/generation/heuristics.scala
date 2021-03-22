@@ -17,7 +17,7 @@ trait Heuristic {
   /** Removes the next slot to fill from the given queue. */
   final def pickNext(q: mutable.ListBuffer[Slot]): Slot = {
     require(q.nonEmpty, "Cannot pick from an empty queue!")
-    if (q.lengthCompare(1) == 0)
+    if (q.size == 1)
       q.remove(0)
     else
       makeChoice(q)

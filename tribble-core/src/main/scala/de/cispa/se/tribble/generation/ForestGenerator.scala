@@ -38,7 +38,7 @@ class SizedForestAdapter(min: Int, max: Int, n: Int, heuristic: Heuristic, maxRe
     var size = (max - min) / 2
     val result = mutable.ListBuffer[DTree]()
 
-    while (result.lengthCompare(n) < 0) {
+    while (result.size < n) {
       val generator = new SizedTreeGenerator(maxRepetitions, random, shortestTreeGenerator, size, heuristic)
       val tree = generator.generate
       val treeSize = tree.size()
