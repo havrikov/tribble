@@ -22,14 +22,7 @@ private[tribble] class GoalBasedTreeGenerator(closeOffGenerator: TreeGenerator, 
           node
         } else {
           // if we already reached the target, close off the tree
-          val node = closeOffGenerator.gen(a, parent, currentDepth)
-          // because we do not return to this method recursively when closing off the tree, we have to update the goal post-factum
-          // the node itself, however, has already been reported to the goal at the beginning of this method
-          node match {
-            case DNode(_, _, children) => children.values.foreach(informGoal)
-            case _ =>
-          }
-          node
+          delegateToCloseOff(a, parent, currentDepth)
         }
       case c@Concatenation(elements, _) =>
         // problem with left recursion
@@ -44,18 +37,26 @@ private[tribble] class GoalBasedTreeGenerator(closeOffGenerator: TreeGenerator, 
         node.children ++= generated_children
         node
       case q@Quantification(subj, min, _, _) =>
-        val node = DNode(q, parent)
         if (goal.targetReached) {
-          val newChildren = Stream.fill(min)(subj).map(closeOffGenerator.gen(_, Some(node), currentDepth + 1)).toList
-          // we do not recurse here, so update the goal post-factum
-          newChildren.foreach(informGoal)
-          node.children ++= newChildren.zipWithIndex.map(_.swap)
+          delegateToCloseOff(q, parent, currentDepth)
         } else {
+          val node = DNode(q, parent)
           node.children ++= Stream.fill(Math.max(min, 1))(subj).map(gen(_, Some(node), currentDepth + 1)).zipWithIndex.map(_.swap)
+          node
         }
-        node
       case t: TerminalRule => closeOffGenerator.gen(t, parent, currentDepth + 1)
     }
+  }
+
+  private def delegateToCloseOff(rule: DerivationRule, parent: Option[DNode], currentDepth: Int)(implicit goal: CoverageGoal): DTree = {
+    val node = closeOffGenerator.gen(rule, parent, currentDepth)
+    // because we do not return to this method recursively when closing off the tree, we have to update the goal post-factum
+    // the node itself, however, has already been reported to the goal at the beginning of the method gen
+    node match {
+      case DNode(_, _, children) => children.values.foreach(informGoal)
+      case _ =>
+    }
+    node
   }
 
   private def informGoal(t: DTree)(implicit goal: CoverageGoal): Unit = t dfs { n => goal.usedDerivation(n.decl, n.parent) }
