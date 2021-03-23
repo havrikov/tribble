@@ -20,7 +20,7 @@ class KPathGeneratorSpec extends TestSpecification with SharedModelAssembler {
 
     val regexGenerator = new RegexGenerator(random, 1)
     val shortestTreeGenerator = new ShortestTreeGenerator(regexGenerator, random, 1)
-    val generator = new GoalBasedTreeGenerator(shortestTreeGenerator, new KPathCoverageGoal(2), random)
+    val generator = new GoalBasedTreeGenerator(shortestTreeGenerator, random)(grammar, new KPathCoverageGoal(2))
 
     val generated = generator.generateForest().take(1000).toList
 

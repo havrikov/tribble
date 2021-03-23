@@ -106,7 +106,7 @@ trait ForestationGenerationModule { self: Command =>
   protected var p: Int = opt[Int](default = 20, description = "The number of forests to generate for each size from 1 to #targets.")
 
   private lazy val goalProvider: PowerSetCoverageGoals = new PowerSetCoverageGoals(k, p)
-  lazy val forestationGenerator: Iterator[GoalBasedTreeGenerator] = goalProvider.goals.map(new GoalBasedTreeGenerator(shortestTreeGenerator, _, random))
+  lazy val forestationGenerator: Iterator[GoalBasedTreeGenerator] = goalProvider.goals.map(new GoalBasedTreeGenerator(shortestTreeGenerator, random)(grammar, _))
 }
 
 trait CloseOffControlModule {self: Command =>
@@ -156,13 +156,13 @@ trait ForestGeneratorModule { self: Command =>
   lazy val forestGenerator: ForestGenerator = mode match {
     case sizedPattern(min, max, n) => new SizedForestAdapter(min.toInt, max.toInt, n.toInt, heuristicImpl, maxRepetitions)(grammar, random, shortestTreeGenerator)
     case depthPattern(depth, num) => new ForestAdapter(new MaxDepthGenerator(maxRepetitions, random, regexGenerator, depth.toInt, heuristicImpl), num.toInt)
-    case fallOverPattern(k, depth, num) => new ContinuingForestAdapter(new GoalBasedTreeGenerator(shortestTreeGenerator, new KPathCoverageGoal(k.toInt), random), new BestEffortMaxDepthGenerator(maxRepetitions, random, regexGenerator, depth.toInt, heuristicImpl), num.toInt)
-    case recurrentFallOverPattern(k, depth, num) => new ForestSizeLimiter(new GoalBasedTreeGenerator(new BestEffortMaxDepthGenerator(maxRepetitions, random, regexGenerator, depth.toInt, heuristicImpl), new RecurrentKPathCoverageGoal(k.toInt), random), num.toInt)
+    case fallOverPattern(k, depth, num) => new ContinuingForestAdapter(new GoalBasedTreeGenerator(shortestTreeGenerator, random)(grammar, new KPathCoverageGoal(k.toInt)), new BestEffortMaxDepthGenerator(maxRepetitions, random, regexGenerator, depth.toInt, heuristicImpl), num.toInt)
+    case recurrentFallOverPattern(k, depth, num) => new ForestSizeLimiter(new GoalBasedTreeGenerator(new BestEffortMaxDepthGenerator(maxRepetitions, random, regexGenerator, depth.toInt, heuristicImpl), random)(grammar, new RecurrentKPathCoverageGoal(k.toInt)), num.toInt)
     case rndPattern(avg, num) => new ForestAdapter(new SizedTreeGenerator(maxRepetitions, random, shortestTreeGenerator, avg.toInt, heuristicImpl), num.toInt)
-    case kPathPattern(k) => new GoalBasedTreeGenerator(shortestTreeGenerator, new KPathCoverageGoal(k.toInt), random)
-    case kPathDepthPattern(k, d) => new GoalBasedTreeGenerator(new BestEffortMaxDepthGenerator(maxRepetitions, random, regexGenerator, d.toInt, heuristicImpl), new KPathCoverageGoal(k.toInt), random)
-    case recurrentKPathPattern(k, n) => new ForestSizeLimiter(new GoalBasedTreeGenerator(shortestTreeGenerator, new RecurrentKPathCoverageGoal(k.toInt), random), n.toInt)
-    case recurrentTimedKPathPattern(k, minutes) => new ForestTimeLimiter(new GoalBasedTreeGenerator(shortestTreeGenerator, new RecurrentKPathCoverageGoal(k.toInt), random), minutes.toInt)
+    case kPathPattern(k) => new GoalBasedTreeGenerator(shortestTreeGenerator, random)(grammar, new KPathCoverageGoal(k.toInt))
+    case kPathDepthPattern(k, d) => new GoalBasedTreeGenerator(new BestEffortMaxDepthGenerator(maxRepetitions, random, regexGenerator, d.toInt, heuristicImpl), random)(grammar, new KPathCoverageGoal(k.toInt))
+    case recurrentKPathPattern(k, n) => new ForestSizeLimiter(new GoalBasedTreeGenerator(shortestTreeGenerator, random)(grammar, new RecurrentKPathCoverageGoal(k.toInt)), n.toInt)
+    case recurrentTimedKPathPattern(k, minutes) => new ForestTimeLimiter(new GoalBasedTreeGenerator(shortestTreeGenerator, random)(grammar, new RecurrentKPathCoverageGoal(k.toInt)), minutes.toInt)
     case probPattern(d, n) => new ForestAdapter(new NaiveProbabilisticTreeGenerator(maxRepetitions, regexGenerator, d.toInt, random, shortestTreeGenerator), n.toInt)
     case limitedProbPattern(d, c, n) => new ForestAdapter(new NaiveProbabilisticTreeGenerator(maxRepetitions, regexGenerator, d.toInt, random, shortestTreeGenerator, c.toInt), n.toInt)
     case _ => throw new IllegalArgumentException(s"Unknown mode '$mode'")

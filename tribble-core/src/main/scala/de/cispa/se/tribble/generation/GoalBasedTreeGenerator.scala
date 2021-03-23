@@ -3,7 +3,7 @@ package generation
 
 import scala.util.Random
 
-private[tribble] class GoalBasedTreeGenerator(closeOffGenerator: TreeGenerator, goal: CoverageGoal, random: Random)(implicit val grammar: GrammarRepr) extends ForestGenerator {
+private[tribble] class GoalBasedTreeGenerator(closeOffGenerator: TreeGenerator, random: Random)(implicit grammar: GrammarRepr, goal: CoverageGoal) extends ForestGenerator {
 
   private def gen(rule: DerivationRule, parent: Option[DNode], currentDepth: Int)(implicit goal: CoverageGoal): DTree = {
     goal.usedDerivation(rule, parent)
@@ -48,7 +48,7 @@ private[tribble] class GoalBasedTreeGenerator(closeOffGenerator: TreeGenerator, 
     }
   }
 
-  private def delegateToCloseOff(rule: DerivationRule, parent: Option[DNode], currentDepth: Int)(implicit goal: CoverageGoal): DTree = {
+  private def delegateToCloseOff(rule: DerivationRule, parent: Option[DNode], currentDepth: Int): DTree = {
     val node = closeOffGenerator.gen(rule, parent, currentDepth)
     // because we do not return to this method recursively when closing off the tree, we have to update the goal post-factum
     // the node itself, however, has already been reported to the goal at the beginning of the method gen
@@ -61,9 +61,9 @@ private[tribble] class GoalBasedTreeGenerator(closeOffGenerator: TreeGenerator, 
 
   private def informGoal(t: DTree)(implicit goal: CoverageGoal): Unit = t dfs { n => goal.usedDerivation(n.decl, n.parent) }
 
-  private def generate(grammar: GrammarRepr, goal: CoverageGoal): Stream[DTree] = gen(grammar.root, None, 0)(goal) #:: (if (goal.nextTarget()) generate(grammar, goal) else Stream.empty)
-
   /** Generates a forest satisfying the coverage goal */
-  override def generateForest(): Stream[DTree] = generate(grammar, goal)
+  override def generateForest(): Stream[DTree] = {
+    gen(grammar.root, None, 0) #:: (if (goal.nextTarget()) generateForest() else Stream.empty)
+  }
 
 }
