@@ -44,7 +44,7 @@ private[tribble] class GoalBasedTreeGenerator(closeOffGenerator: TreeGenerator, 
           node.children ++= Stream.fill(Math.max(min, 1))(subj).map(gen(_, Some(node), currentDepth + 1)).zipWithIndex.map(_.swap)
           node
         }
-      case t: TerminalRule => closeOffGenerator.gen(t, parent, currentDepth + 1)
+      case t: TerminalRule => closeOffGenerator.gen(t, parent, currentDepth)
     }
   }
 
