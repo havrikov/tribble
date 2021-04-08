@@ -8,6 +8,7 @@ version = Versions.core
 
 dependencies {
     api(project(":tribble-model"))
+    api("org.jgrapht", "jgrapht-core", Versions.jGraphT)
 
     implementation("org.log4s", "log4s_2.12", Versions.log4s)
     runtimeOnly("ch.qos.logback", "logback-classic", Versions.logback)
@@ -18,7 +19,6 @@ dependencies {
     implementation("org.scala-lang", "scala-compiler", Versions.scala)
     implementation("dk.brics", "automaton", Versions.automaton)
     implementation("org.apache.commons", "commons-text", Versions.commonsText)
-    implementation("org.jgrapht", "jgrapht-core", Versions.jGraphT)
 
 
     testFixturesApi("org.scalatest", "scalatest_2.12", Versions.scalatest)
