@@ -4,7 +4,7 @@ Fuzzing powered by grammar coverage.
 
 ## Building tribble
 
-Building and running tribble requires Java version `1.8` or greater.  
+Building and running tribble requires Java version `9` or greater.  
 Build tribble by running `./gradlew build` (or `.\gradlew.bat build` on Windows) in the project's root directory.  
 
 ## Running tribble
@@ -74,10 +74,16 @@ There are two formats for tribble grammars: a text-based format and a Scala DSL-
 
 ### Scala DSL
 
-The Scala DSL variant profits from type checking and syntax highlighting in IDEs but has a limitation on the size of the grammar.
-If a `StackOverflowError` is thrown during compilation, increasing the available stack size usually helps: `-Xss1g`.  
-Sometimes, however a `ToolBoxError: reflective compilation has failed` is thrown indicating that the grammar is simply too large and the scala compiler generates a method exceeding the 64kb limit of the JVM.
-If this happens, consider switching to the text-based grammar format presented further down.
+The preferred way of providing a grammar to tribble is using its Scala DSL variant
+because it profits from type checking and syntax highlighting in IDEs.
+
+> Note. If you rely on advanced Scala features to compute (parts of) your grammar programmatically,
+> consider looking into the `--loading-strategy=compile` option.
+> :warning: This option has a limitation on the size of the grammar.
+> If a `StackOverflowError` is thrown during compilation, increasing the available stack size usually helps: `-Xss1g`.  
+> Sometimes, however a `ToolBoxError: reflective compilation has failed` is thrown indicating that the grammar is simply too large,
+> and the scala compiler generates a method exceeding the 64kb limit of the JVM.
+> If this happens, consider switching to the text-based grammar format presented further down.
 
 ```scala
 // optional import statement which enables syntax highlighting and type checking in IDEs
@@ -275,14 +281,3 @@ To suppress this behavior you can pass the `--ignore-grammar-cache` flag.
 To make the grammars produce more meaningful inputs it is worth considering
 - explicitly adding whitespace tokens into the productions
 - adding a small vocabulary to constrain the number of produced identifiers
-
-### Excluding Unwanted Rules
-A nonterminal `X` can represent an unwanted derivation path.
-If removing it from the grammar entirely is too cumbersome,
-adding the following construct allows to remove it from the generative part of the grammar while preserving the validity criteria of tribble:
-```
-Dummy1 = X | Dummy2;
-Dummy2 = Dummy1;
-```
-This construct does not inhibit the computation of shortest derivations and simultaneously represents valid uses of all involved nonterminals.
-Now you can remove `X` from the `start` path.
