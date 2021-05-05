@@ -4,7 +4,7 @@ Fuzzing powered by grammar coverage.
 
 ## Building tribble
 
-Building and running tribble requires Java version `9` or greater.  
+Building and running tribble requires Java version `11` or greater.  
 Build tribble by running `./gradlew build` (or `.\gradlew.bat build` on Windows) in the project's root directory.  
 
 ## Running tribble
