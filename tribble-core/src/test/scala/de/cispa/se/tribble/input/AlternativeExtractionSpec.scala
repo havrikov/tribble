@@ -34,4 +34,30 @@ class AlternativeExtractionSpec extends TestSpecification with SharedNoIdModelAs
 
     extracted shouldEqual expected
   }
+
+  it should "extract nested alternations" in {
+    val g = Grammar(
+      'S := 'A,
+      /* used direct invocation of constructors to prevent flattening of
+      'A := "a1" | ( "a2" | ("a3" | 'B)))
+      'B := "b1" */
+      'A := Alternation(Seq("a1", Alternation(Seq("a2", Alternation(Seq("a3", 'B)))))),
+      'B := "b1"
+    )
+    val grammar: GrammarRepr = modelAssembler.assemble(g.productions)
+
+    val extracted: GrammarRepr = AlternativeExtraction.process(grammar)
+
+    val eG = Grammar(
+      'S := 'A,
+      'A := "a1" | 'A_a0,
+      'A_a0 := "a2" | 'A_a0_a0,
+      'A_a0_a0 := "a3" | 'B,
+      'B := "b1"
+    )
+
+    val expected: GrammarRepr = modelAssembler.assemble(eG.productions)
+
+    extracted shouldEqual expected
+  }
 }

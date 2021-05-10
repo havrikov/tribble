@@ -90,7 +90,7 @@ object AlternativeExtraction extends AssemblyPhase {
       val name = s"${nonTerminal}_a$index"
       val r = Reference(name)
       grammar(nonTerminal) = r
-      val newA = Alternation(a.alternatives.map(outerExtract(name, _)))
+      val newA = Alternation(a.alternatives.map(innerExtract(name, _)))
       grammar(name) = newA
       r
     case Quantification(subject, min, max, id) =>
