@@ -23,7 +23,7 @@ object Main {
         new GenerateTask,
         new GenerateForestationTask,
         new InlineGrammarTask,
-        new ExtractAlternativesTask,
+        new ExtractAlternationsTask,
         new CacheGrammarTask,
       ).foreach(_.execute())
   }

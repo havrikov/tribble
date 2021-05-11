@@ -4,7 +4,7 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 
 import de.cispa.se.tribble.Internal._
-import de.cispa.se.tribble.input.{AlternativeExtraction, ObjectStreamGrammarCache, RuleInlining}
+import de.cispa.se.tribble.input.{AlternationExtraction, ObjectStreamGrammarCache, RuleInlining}
 import de.cispa.se.tribble.output.GrammarPrettyPrinter
 import org.backuity.clist.{Command, opt}
 import org.log4s.getLogger
@@ -44,11 +44,11 @@ final class InlineGrammarTask extends Command("inline", "Output grammar with inl
   }
 }
 
-final class ExtractAlternativesTask extends Command("extract-alternatives", "Output grammar with all alternatives extracted to top level")
+final class ExtractAlternationsTask extends Command("extract-alternations", "Output grammar with all alternations extracted to top level")
   with Task with CacheModule with OutputModule with GrammarModule {
 
   override def execute(): Unit = {
-    val extracted = AlternativeExtraction.process(grammar)
+    val extracted = AlternationExtraction.process(grammar)
     val serialized = new GrammarPrettyPrinter(extracted).prettyPrint()
     Files.write(Files.createFile(outputDir.resolve(grammarFile.getName)), serialized.getBytes(StandardCharsets.UTF_8))
   }

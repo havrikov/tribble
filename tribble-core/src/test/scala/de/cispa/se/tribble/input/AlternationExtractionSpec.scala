@@ -3,9 +3,9 @@ package input
 
 import de.cispa.se.tribble.dsl._
 
-class AlternativeExtractionSpec extends TestSpecification with SharedNoIdModelAssembler {
+class AlternationExtractionSpec extends TestSpecification with SharedNoIdModelAssembler {
 
-  "The alternative extraction" should "extract alternatives" in {
+  "The alternation extraction" should "extract alternatives" in {
     val g = Grammar(
       'S := 'A | 'B,
       'A := "a1" ~ ('D | "a2").? ~ ("a3" ~ ('D | "a4" | "a5")).rep,
@@ -15,7 +15,7 @@ class AlternativeExtractionSpec extends TestSpecification with SharedNoIdModelAs
     )
     val grammar: GrammarRepr = modelAssembler.assemble(g.productions)
 
-    val extracted: GrammarRepr = AlternativeExtraction.process(grammar)
+    val extracted: GrammarRepr = AlternationExtraction.process(grammar)
 
     val eG = Grammar(
       'S := 'A | 'B,
@@ -46,7 +46,7 @@ class AlternativeExtractionSpec extends TestSpecification with SharedNoIdModelAs
     )
     val grammar: GrammarRepr = modelAssembler.assemble(g.productions)
 
-    val extracted: GrammarRepr = AlternativeExtraction.process(grammar)
+    val extracted: GrammarRepr = AlternationExtraction.process(grammar)
 
     val eG = Grammar(
       'S := 'A,

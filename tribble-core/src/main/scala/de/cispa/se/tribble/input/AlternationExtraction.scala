@@ -4,7 +4,7 @@ package input
 import scala.collection.mutable
 
 /**
-  * Extracts all internal alternatives into top level. <br>
+  * Extracts all internal alternations into top level. <br>
   * <b>Run [[AssignIds]] afterwards to give newly created rules unique ids!</b>
   *
   * <p>
@@ -34,7 +34,7 @@ import scala.collection.mutable
   * </pre>
   *
   */
-object AlternativeExtraction extends AssemblyPhase {
+object AlternationExtraction extends AssemblyPhase {
 
   private type Grammar = mutable.Map[NonTerminal, DerivationRule]
 
@@ -48,7 +48,7 @@ object AlternativeExtraction extends AssemblyPhase {
   }
 
   /**
-    * Extracts alternatives from a top-level grammar production.
+    * Extracts alternations from a top-level grammar production.
     * This method will NOT create new references for alternations encountered on top level.
     * Side effect: updates the grammar with newly created sub-rules.
     *
@@ -73,7 +73,7 @@ object AlternativeExtraction extends AssemblyPhase {
   }
 
   /**
-    * Extracts alternatives from an internal derivation rule.
+    * Extracts alternations from an internal derivation rule.
     * This method will create new references for all encountered alternations.
     * Side effect: updates the grammar with newly created sub-rules.
     *
