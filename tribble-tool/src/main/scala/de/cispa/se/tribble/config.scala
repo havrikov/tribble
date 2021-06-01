@@ -54,7 +54,8 @@ trait GrammarModule { self: Command =>
   var checkDuplicateAlternatives: Boolean = opt[Boolean](default = true, name ="no-check-duplicate-alts", description = "Allow duplicate alternatives in alternations.")
   var checkIds: Boolean = opt[Boolean](default = true, name ="no-check-ids", description = "Allow inconsistent ids in derivation rules.")
   var assignProbabilities: Boolean = opt[Boolean](default = true, name ="no-assign-prob", description = "Do not assign probabilities to derivation rules.")
-  lazy val modelAssembler: ModelAssembler = new ModelAssembler(automatonCache, damping, similarity, unfoldRegexes, mergeLiterals, checkDuplicateAlternatives, checkIds, assignProbabilities)
+  var epsilonizeQuantifications: Boolean = opt[Boolean](description = "Turn optional parts of quantifications into alternations.")
+  lazy val modelAssembler: ModelAssembler = new ModelAssembler(automatonCache, damping, similarity, unfoldRegexes, mergeLiterals, checkDuplicateAlternatives, checkIds, assignProbabilities, epsilonizeQuantifications)
 
   var loadingStrategy: String = opt[String](default = "parse", description = "How to process the grammar file. Valid options are parse, compile, and unmarshal.")
   lazy val loadingStrategyImpl: LoadingStrategy = loadingStrategy match {

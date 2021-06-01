@@ -19,6 +19,7 @@ private[tribble] class ModelAssembler(
                                        checkDuplicateAlternatives: Boolean = true,
                                        checkIds: Boolean = true,
                                        assignProbabilities: Boolean = true,
+                                       epsilonizeQuantifications: Boolean = false,
                                      ) {
 
   private val phases = mutable.ListBuffer[AssemblyPhase]()
@@ -28,6 +29,7 @@ private[tribble] class ModelAssembler(
   if (transformRegexes) appendPhase(RegexTransformation)
   if (mergeLiterals) appendPhase(LiteralMerge)
   if (checkDuplicateAlternatives) appendPhase(CheckDuplicateAlternatives)
+  if (epsilonizeQuantifications) appendPhase(QuantificationEpsilonization)
   appendPhase(AssignIds)
   if (checkIds) appendPhase(CheckIds)
   appendPhase(ShortestDerivationComputation)
