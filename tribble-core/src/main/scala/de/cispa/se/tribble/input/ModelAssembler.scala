@@ -414,7 +414,7 @@ object CheckIds extends AssemblyPhase {
           logger.error(s"Duplicate id ${subRule.id} in rule $name at $subRule")
           violations = true
         } else if (subRule.id == DerivationRule.DEFAULT_ID) {
-          logger.error(s"Uninitialized id in rule $name ar $subRule")
+          logger.error(s"Uninitialized id in rule $name at $subRule")
           violations = true
         }
         seenIds.add(subRule.id)
