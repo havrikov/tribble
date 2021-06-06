@@ -120,7 +120,7 @@ object ShortestDerivationComputation extends AssemblyPhase {
       case a@Alternation(alternatives, _) =>
         a.shortestDerivation = incNoOverflow(alternatives.map(resolve).min)
       case q@Quantification(subject, min, _, _) =>
-        q.shortestDerivation = if (min == 0) 0 else incNoOverflow(resolve(subject))
+        q.shortestDerivation = if (min == 0) 1 else incNoOverflow(resolve(subject))
       case _ =>
     }
     rule.shortestDerivation
