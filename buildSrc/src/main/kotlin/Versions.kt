@@ -21,7 +21,7 @@ object Versions {
     const val clist = "3.5.1"
     const val json4sNative = "3.6.8"
     const val scalaCSV = "1.3.6"
-    const val jGraphT = "1.5.0"
+    const val jGraphT = "1.5.1"
 
     // test dependencies
     const val scalatest = "3.2.2"
