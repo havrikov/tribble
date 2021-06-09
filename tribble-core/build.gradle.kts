@@ -22,7 +22,7 @@ dependencies {
 
 
     testFixturesApi("org.scalatest", "scalatest_2.12", Versions.scalatest)
-    testImplementation("org.scalatestplus", "scalacheck-1-14_2.12", Versions.scalatestPlus)
+    testImplementation("org.scalatestplus", "scalacheck-1-15_2.12", Versions.scalatestPlus)
     testImplementation("org.scalacheck", "scalacheck_2.12", Versions.scalacheck)
     // needed for the report generation in the scalatest gradle plugin
     testRuntimeOnly("com.vladsch.flexmark", "flexmark-profile-pegdown", Versions.flexmark)
