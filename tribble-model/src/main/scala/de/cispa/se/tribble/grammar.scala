@@ -53,7 +53,7 @@ final case class Concatenation(elements: Seq[DerivationRule], override var id: I
 @SerialVersionUID(8294090486258532899L)
 final case class Alternation(private val alts: Seq[DerivationRule], override var id: Int = DEFAULT_ID) extends DerivationRule {
   private[tribble] def this(alts: Seq[DerivationRule]) = this(alts, DEFAULT_ID)
-  lazy val alternatives: Seq[DerivationRule] = alts.sorted
+  lazy val alternatives: Seq[DerivationRule] = alts.sorted.view.force
   override def equals(obj: Any): Boolean = this.canEqual(obj) && alternatives.equals(obj.asInstanceOf[Alternation].alternatives)
   override def toString: String = s"${alternatives.mkString("(", " | ", s")a$id")}${if(probability.isNaN)""else s"@@$probability"}"
   override def toStream: Stream[DerivationRule] = this #:: alternatives.toStream.flatMap(_.toStream)
