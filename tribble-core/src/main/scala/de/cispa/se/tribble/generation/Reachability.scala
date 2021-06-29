@@ -5,7 +5,7 @@ import org.jgrapht.Graph
 import org.jgrapht.alg.shortestpath.{CHManyToManyShortestPaths, EppsteinShortestPathIterator}
 import org.jgrapht.graph.DefaultEdge
 import org.jgrapht.graph.builder.{GraphBuilder, GraphTypeBuilder}
-import org.jgrapht.util.SupplierUtil
+import org.jgrapht.util.{ConcurrencyUtil, SupplierUtil}
 
 import java.util.{Collections, Map => JMap, Set => JSet}
 import scala.collection.JavaConverters._
@@ -27,7 +27,13 @@ sealed class Reachability(grammar: GrammarRepr) {
 
   // gather interesting rules that are not guaranteed to be reachable from the root
   private val preliminaryTargets = grammarGraph.vertexSet().asScala.filter(isInteresting).toSet
-  private val paths = new CHManyToManyShortestPaths(grammarGraph).getManyToManyPaths(grammarGraph.vertexSet(), preliminaryTargets.asJava)
+  private val paths = {
+    val executor = ConcurrencyUtil.createThreadPoolExecutor(Runtime.getRuntime.availableProcessors())
+    val calc = new CHManyToManyShortestPaths(grammarGraph, executor)
+    val paths = calc.getManyToManyPaths(grammarGraph.vertexSet(), preliminaryTargets.asJava)
+    executor.shutdown()
+    paths
+  }
 
   // Populate the reachability and immediate successors by consulting the shortest paths
   // from all nodes in the graph to all interesting nodes.
